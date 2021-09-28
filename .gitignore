@@ -1,3 +1,5 @@
+tmp/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -15,7 +17,7 @@
 # vendor/
 
 # Jetbrains config
-.idea/**
+.idea/
 
 !.idea/runConfigurations/
 !.idea/rest-api.http
