@@ -1,0 +1,14 @@
+# Call to protected whoami
+GET http://localhost:80
+
+### Call to docker-compose bouncer directly
+
+POST http://localhost:8082/api/v1/forwardAuth
+
+### Call to local bouncer forward auth
+
+POST http://localhost:8090/api/v1/forwardAuth
+
+
+### Call to local bouncer ping
+GET http://localhost:8090/api/v1/ping
