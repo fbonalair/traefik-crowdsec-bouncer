@@ -5,7 +5,7 @@ services:
     image: "traefik:v2.5"
     container_name: "traefik"
     command:
-      #- "--log.level=DEBUG"
+#      - "--log.level=DEBUG"
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -17,9 +17,20 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
   whoami:
-    image: "traefik/whoami"
+    image: traefik/whoami
     container_name: "simple-service"
     labels:
+      # Create bouncer middleware
+      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://bouncer:8080/api/v1/forwardAuth"
+
+      # Traefik routing to this service
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`localhost`)"
       - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.routers.whoami.middlewares=crowdsec-bouncer@docker"
+
+  api:
+    image: traefik-crowdsec-bouncer
+    container_name: bouncer
+    ports:
+      - "8082:8080"
