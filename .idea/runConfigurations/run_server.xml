@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="run server" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="traefik-crowdsec-bouncer" />
+    <working_directory value="$PROJECT_DIR$" />
+    <envs>
+      <env name="PORT" value="8081" />
+    </envs>
+    <kind value="FILE" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/main.go" />
+    <method v="2" />
+  </configuration>
+</component>
