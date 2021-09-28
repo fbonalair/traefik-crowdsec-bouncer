@@ -16,6 +16,9 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     network_mode: host
+#    networks:
+#      crowdsec_test:
+#        ipv4_address: 172.20.0.3
 
   whoami:
     image: traefik/whoami
@@ -29,6 +32,27 @@ services:
       - "traefik.http.routers.whoami.rule=Host(`localhost`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.routers.whoami.middlewares=crowdsec-bouncer@docker"
+#    networks:
+#      crowdsec_test:
+#        ipv4_address: 172.20.0.2
+
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.2.0
+    environment:
+      COLLECTIONS: "crowdsecurity/nginx"
+      GID: "${GID-1000}"
+    depends_on:
+      - 'traefik'
+    volumes:
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
+      - logs:/var/log/nginx
+      - crowdsec-db:/var/lib/crowdsec/data/
+      - crowdsec-config:/etc/crowdsec/
+    ports:
+      - 8083:8080
+#    networks:
+#      crowdsec_test:
+#        ipv4_address: 172.20.0.4
 #
 #  api:
 #    build: .
@@ -36,3 +60,31 @@ services:
 #    container_name: bouncer
 #    ports:
 #      - "8082:8080"
+
+#  dashboard:
+#    build: ./crowdsec/dashboard
+#    ports:
+#      - 3000:3000
+#    environment:
+#      MB_DB_FILE: /data/metabase.db
+#      MGID: "${GID-1000}"
+#    depends_on:
+#      - 'crowdsec'
+#    volumes:
+#      - crowdsec-db:/metabase-data/
+##    networks:
+##      crowdsec_test:
+##        ipv4_address: 172.20.0.5
+#  # credentials: crowdsec@crowdsec.net and !!Cr0wdS3c_M3t4b4s3??
+
+volumes:
+  logs:
+  crowdsec-db:
+  crowdsec-config:
+
+#networks:
+#  crowdsec_test:
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: 172.20.0.0/24
