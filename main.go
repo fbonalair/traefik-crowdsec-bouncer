@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -55,16 +57,14 @@ func forwardAuth(c *gin.Context) {
 		IdleConnTimeout: 30 * time.Second,
 	}
 	client := &http.Client{Transport: tr}
+	decisionUrl := url.URL{
+		Scheme:   "http",
+		Host:     "localhost:8083",
+		Path:     "v1/decisions",
+		RawQuery: fmt.Sprintf("type=ban&ip=%s", realIP),
+	}
 
-	// TODO use Url instead of string
-	//decisionApiUrl := url.URL{
-	//	Host: "localhost",
-	//	Path: "/v1/decisions",
-	//}
-	//decisionApiUrl := "http://localhost:8083/v1/decisions?ip="
-	decisionApiUrl := fmt.Sprintf("http://localhost:8083/v1/decisions?type=ban&ip=%s", realIP)
-
-	req, err := http.NewRequest(http.MethodGet, decisionApiUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, decisionUrl.String(), nil)
 	if err != nil {
 		remedyError(fmt.Errorf("can't create a new http request : %w", err), c)
 		return
@@ -75,7 +75,12 @@ func forwardAuth(c *gin.Context) {
 		remedyError(fmt.Errorf("error while requesting crowdsec API : %w", err), c)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			remedyError(err, c)
+		}
+	}(resp.Body)
 	reqBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		remedyError(fmt.Errorf("error while parsing crowdsec response body : %w", err), c)
@@ -83,7 +88,11 @@ func forwardAuth(c *gin.Context) {
 	}
 
 	var decisions []Decision
-	json.Unmarshal(reqBody, &decisions)
+	err = json.Unmarshal(reqBody, &decisions)
+	if err != nil {
+		remedyError(fmt.Errorf("error while unmarshalling crowdsec response body : %w", err), c)
+		return
+	}
 
 	// Authorization logic
 	if len(decisions) > 0 {
@@ -94,6 +103,6 @@ func forwardAuth(c *gin.Context) {
 }
 
 func remedyError(err error, c *gin.Context) {
-	c.Error(err)
+	_ = c.Error(err) // nil err should be handled earlier
 	c.Status(http.StatusUnauthorized)
 }

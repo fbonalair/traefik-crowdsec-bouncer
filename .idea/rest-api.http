@@ -20,5 +20,5 @@ X-Api-Key: 40796d93c2958f9e58345514e67740e5
 
 
 ### Call to crowdsec decision API with parameters
-GET localhost:8083/v1/decisions?ip=209.127.17.234
+GET localhost:8083/v1/decisions?type=ban&ip=209.127.17.234
 X-Api-Key: 40796d93c2958f9e58345514e67740e5
