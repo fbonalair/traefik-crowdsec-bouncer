@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 )
+
+const CLIENT_IP_HEADER = "X-Real-Ip"
 
 type Decision struct {
 	Id        int    `json:"id"`
@@ -38,14 +41,15 @@ func ping(c *gin.Context) {
 }
 
 func forwardAuth(c *gin.Context) {
-	// TODO in case of error, default reject request
-	println("Authorising request") // FIXME debug
+	// Getting and verifying ip from header
+	realIP := c.Request.Header.Get(CLIENT_IP_HEADER)
+	parsedRealIP := net.ParseIP(realIP)
+	if parsedRealIP == nil {
+		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", CLIENT_IP_HEADER), c)
+		return
+	}
 
-	// get headers
-	realIP := c.Request.Header.Get("X-Real-Ip") // TODO sanitized ip
-	//forwardedFor = c.Request.Header.Get("X-Forwarded-For")
-
-	// Call crowsec API
+	// Call crowdsec API
 	tr := &http.Transport{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 30 * time.Second,
@@ -58,23 +62,23 @@ func forwardAuth(c *gin.Context) {
 	//	Path: "/v1/decisions",
 	//}
 	//decisionApiUrl := "http://localhost:8083/v1/decisions?ip="
-	decisionApiUrl := fmt.Sprintf("http://localhost:8083/v1/decisions?ip=%s", realIP)
+	decisionApiUrl := fmt.Sprintf("http://localhost:8083/v1/decisions?type=ban&ip=%s", realIP)
 
 	req, err := http.NewRequest(http.MethodGet, decisionApiUrl, nil)
 	if err != nil {
-		fmt.Printf("error %s", err)
+		remedyError(fmt.Errorf("can't create a new http request : %w", err), c)
 		return
 	}
 	req.Header.Add("X-Api-Key", `40796d93c2958f9e58345514e67740e5`) // TODO extract from env var
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("error %s", err)
+		remedyError(fmt.Errorf("error while requesting crowdsec API : %w", err), c)
 		return
 	}
 	defer resp.Body.Close()
 	reqBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("error %s", err)
+		remedyError(fmt.Errorf("error while parsing crowdsec response body : %w", err), c)
 		return
 	}
 
@@ -87,4 +91,9 @@ func forwardAuth(c *gin.Context) {
 	} else {
 		c.Status(http.StatusOK)
 	}
+}
+
+func remedyError(err error, c *gin.Context) {
+	c.Error(err)
+	c.Status(http.StatusUnauthorized)
 }
