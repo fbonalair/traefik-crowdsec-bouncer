@@ -1,8 +1,12 @@
-module lleweilyn/traefik-crowsec-bouncer
+module github.com/fbonalair/traefik-crowdsec-bouncer
 
 go 1.17
 
-require github.com/gin-gonic/gin v1.7.4
+require (
+	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+	github.com/gin-gonic/gin v1.7.4
+	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b
+)
 
 require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -17,6 +21,12 @@ require (
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
-	golang.org/x/sys v0.0.0-20200116001909-b77594299b42 // indirect
+	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
+
+replace github.com/fbonalair/traefik-crowdsec-bouncer/config => ../config
+
+replace github.com/fbonalair/traefik-crowdsec-bouncer/model => ../model
+
+replace github.com/fbonalair/traefik-crowdsec-bouncer/controler => ../controler
