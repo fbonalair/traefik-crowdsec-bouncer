@@ -43,10 +43,6 @@ services:
       - crowdsec-config:/etc/crowdsec/
     ports:
       - 8083:8080
-#    networks:
-#      crowdsec_test:
-#        ipv4_address: 172.20.0.4
-#
 #  api:
 #    build: .
 #    image: traefik-crowdsec-bouncer
