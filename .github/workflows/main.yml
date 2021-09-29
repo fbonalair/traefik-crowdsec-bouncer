@@ -2,8 +2,8 @@ name: ci
 
 on:
   push:
-    branches:
-      - 'feature/ci'
+    tags: # Following symver with "v" as prefix: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+      - '^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
 
 jobs:
   docker:
@@ -27,4 +27,4 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: fbonalair/bouncer:latest
+          tags: fbonalair/bouncer:${{ GITHUB_REF }}
