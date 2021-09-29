@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
 	"github.com/gin-gonic/gin"
 )
