@@ -1,53 +1,37 @@
-package main
+package controler
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
+
+	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
+	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
+	"github.com/gin-gonic/gin"
 )
 
-const CLIENT_IP_HEADER = "X-Real-Ip"
+const ClientIpHeader = "X-Real-Ip"
+const crowdsecAuthHeader = "X-Api-Key"
 
-type Decision struct {
-	Id        int    `json:"id"`
-	Origin    string `json:"origin"`
-	Type      string `json:"type"`
-	Scope     string `json:"scope"`
-	Value     string `json:"value"`
-	Duration  string `json:"duration"`
-	Scenario  string `json:"scenario"`
-	Simulated bool   `json:"simulated"`
-}
+var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
+var crowdsecBouncerHost = RequiredEnv("CROWDSEC_BOUNCER_HOST")
+var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
 
-func main() {
-	// TODO: Verifying env vars
-	router := gin.Default()
-	router.GET("/api/v1/ping", ping)
-	router.GET("/api/v1/forwardAuth", forwardAuth)
-	err := router.Run()
-	if err != nil {
-		println("An error occurred while starting server: ", err)
-		return
-	}
-
-}
-
-func ping(c *gin.Context) {
+func Ping(c *gin.Context) {
 	c.String(http.StatusOK, "pong")
 }
 
-func forwardAuth(c *gin.Context) {
+func ForwardAuth(c *gin.Context) {
 	// Getting and verifying ip from header
-	realIP := c.Request.Header.Get(CLIENT_IP_HEADER)
+	realIP := c.Request.Header.Get(ClientIpHeader)
 	parsedRealIP := net.ParseIP(realIP)
 	if parsedRealIP == nil {
-		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", CLIENT_IP_HEADER), c)
+		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", ClientIpHeader), c)
 		return
 	}
 
@@ -58,8 +42,8 @@ func forwardAuth(c *gin.Context) {
 	}
 	client := &http.Client{Transport: tr}
 	decisionUrl := url.URL{
-		Scheme:   "http",
-		Host:     "localhost:8083",
+		Scheme:   crowdsecBouncerScheme,
+		Host:     crowdsecBouncerHost,
 		Path:     "v1/decisions",
 		RawQuery: fmt.Sprintf("type=ban&ip=%s", realIP),
 	}
@@ -69,7 +53,7 @@ func forwardAuth(c *gin.Context) {
 		remedyError(fmt.Errorf("can't create a new http request : %w", err), c)
 		return
 	}
-	req.Header.Add("X-Api-Key", `40796d93c2958f9e58345514e67740e5`) // TODO extract from env var
+	req.Header.Add(crowdsecAuthHeader, crowdsecBouncerApiKey)
 	resp, err := client.Do(req)
 	if err != nil {
 		remedyError(fmt.Errorf("error while requesting crowdsec API : %w", err), c)
@@ -87,7 +71,7 @@ func forwardAuth(c *gin.Context) {
 		return
 	}
 
-	var decisions []Decision
+	var decisions []model.Decision
 	err = json.Unmarshal(reqBody, &decisions)
 	if err != nil {
 		remedyError(fmt.Errorf("error while unmarshalling crowdsec response body : %w", err), c)
