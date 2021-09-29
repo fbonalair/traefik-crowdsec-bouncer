@@ -10,13 +10,14 @@ import (
 	"net/url"
 	"time"
 
-	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
 	"github.com/gin-gonic/gin"
 )
 
-const ClientIpHeader = "X-Real-Ip"
-const crowdsecAuthHeader = "X-Api-Key"
+const (
+	clientIpHeader     = "X-Real-Ip"
+	crowdsecAuthHeader = "X-Api-Key"
+)
 
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
 var crowdsecBouncerHost = RequiredEnv("CROWDSEC_BOUNCER_HOST")
@@ -28,10 +29,10 @@ func Ping(c *gin.Context) {
 
 func ForwardAuth(c *gin.Context) {
 	// Getting and verifying ip from header
-	realIP := c.Request.Header.Get(ClientIpHeader)
+	realIP := c.Request.Header.Get(clientIpHeader)
 	parsedRealIP := net.ParseIP(realIP)
 	if parsedRealIP == nil {
-		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", ClientIpHeader), c)
+		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", clientIpHeader), c)
 		return
 	}
 
