@@ -1,4 +1,4 @@
-version: "3.3"
+version: "3.8"
 
 services:
   traefik:
@@ -15,10 +15,6 @@ services:
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    network_mode: host
-#    networks:
-#      crowdsec_test:
-#        ipv4_address: 172.20.0.3
 
   whoami:
     image: traefik/whoami
@@ -32,9 +28,6 @@ services:
       - "traefik.http.routers.whoami.rule=Host(`localhost`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.routers.whoami.middlewares=crowdsec-bouncer@docker"
-#    networks:
-#      crowdsec_test:
-#        ipv4_address: 172.20.0.2
 
   crowdsec:
     image: crowdsecurity/crowdsec:v1.2.0
@@ -81,10 +74,3 @@ volumes:
   logs:
   crowdsec-db:
   crowdsec-config:
-
-#networks:
-#  crowdsec_test:
-#    ipam:
-#      driver: default
-#      config:
-#        - subnet: 172.20.0.0/24
