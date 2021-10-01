@@ -15,19 +15,17 @@ services:
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    network_mode: host
 
   whoami:
     image: traefik/whoami
     container_name: "simple-service"
     labels:
       # Create bouncer middleware
-      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://127.0.0.1:8081/api/v1/forwardAuth"
-      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://api:8082/api/v1/forwardAuth"
 
       # Traefik routing to this service
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`localhost`, `192.168.1.80`)"
+      - "traefik.http.routers.whoami.rule=Host(`localhost`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.routers.whoami.middlewares=crowdsec-bouncer@docker"
 
@@ -45,6 +43,17 @@ services:
       - crowdsec-config:/etc/crowdsec/
     ports:
       - "8083:8080"
+
+  api:
+    build: .
+    image: traefik-crowdsec-bouncer
+    container_name: bouncer
+    environment:
+      PORT: 8082
+      CROWDSEC_BOUNCER_API_KEY: 40796d93c2958f9e58345514e67740e5
+      CROWDSEC_BOUNCER_HOST: crowdsec:8083
+    ports:
+      - "8082:8080"
 
 #  dashboard:
 #    build: ./crowdsec/dashboard

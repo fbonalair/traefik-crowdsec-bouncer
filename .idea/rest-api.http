@@ -1,19 +1,15 @@
 # Call to protected whoami
 GET http://localhost:80
 
-### Call to docker-compose bouncer directly
-
-GET http://localhost:8082/api/v1/forwardAuth
-X-Real-Ip: 127.0.0.1
-
-### Call to local bouncer forward auth
-
-GET http://localhost:8090/api/v1/forwardAuth
-
-
 ### Call to local bouncer ping
-GET http://localhost:8090/api/v1/ping
+GET http://localhost:8081/api/v1/ping
 
+### Call to local bouncer healthz
+GET http://localhost:8081/api/v1/healthz
+
+### Call to local bouncer
+GET http://localhost:8081/api/v1/forwardAuth
+X-Real-Ip: 127.0.0.1
 
 ### Call to crowdsec decision API
 GET localhost:8083/v1/decisions

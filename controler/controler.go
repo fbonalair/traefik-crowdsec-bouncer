@@ -2,6 +2,7 @@ package controler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,40 +14,38 @@ import (
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 )
 
 const (
-	clientIpHeader     = "X-Real-Ip"
-	crowdsecAuthHeader = "X-Api-Key"
+	clientIpHeader       = "X-Real-Ip"
+	forwardForHeader     = "X-Forwarded-For"
+	crowdsecAuthHeader   = "X-Api-Key"
+	crowdsecBouncerRoute = "v1/decisions"
 )
 
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
 var crowdsecBouncerHost = RequiredEnv("CROWDSEC_BOUNCER_HOST")
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
 
+var client = &http.Client{
+	Transport: &http.Transport{
+		MaxIdleConns:    10,
+		IdleConnTimeout: 30 * time.Second,
+	},
+	Timeout: 5 * time.Second,
+}
+
 func Ping(c *gin.Context) {
 	c.String(http.StatusOK, "pong")
 }
 
-func ForwardAuth(c *gin.Context) {
-	// Getting and verifying ip from header
-	realIP := c.Request.Header.Get(clientIpHeader)
-	parsedRealIP := net.ParseIP(realIP)
-	if parsedRealIP == nil {
-		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", clientIpHeader), c)
-		return
-	}
-
-	// Call crowdsec API
-	tr := &http.Transport{
-		MaxIdleConns:    10,
-		IdleConnTimeout: 30 * time.Second,
-	}
-	client := &http.Client{Transport: tr}
+func callSecApi(c *gin.Context, realIP string) {
+	// Calling crowdsec API
 	decisionUrl := url.URL{
 		Scheme:   crowdsecBouncerScheme,
 		Host:     crowdsecBouncerHost,
-		Path:     "v1/decisions",
+		Path:     crowdsecBouncerRoute,
 		RawQuery: fmt.Sprintf("type=ban&ip=%s", realIP),
 	}
 
@@ -61,6 +60,14 @@ func ForwardAuth(c *gin.Context) {
 		remedyError(fmt.Errorf("error while requesting crowdsec API : %w", err), c)
 		return
 	}
+
+	// verifying access
+	if resp.StatusCode == http.StatusForbidden {
+		remedyError(errors.New("access to crowdsec api is forbidden, please verify API KEY"), c)
+		return
+	}
+
+	// Parsing response
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
@@ -86,6 +93,30 @@ func ForwardAuth(c *gin.Context) {
 	} else {
 		c.Status(http.StatusOK)
 	}
+}
+
+func ForwardAuth(c *gin.Context) {
+	// FIXME
+	log.Debug().Msg("Headers are: ")
+	log.Debug().Msgf("forwardForHeader is %s", c.Request.Header.Get(forwardForHeader))
+	for t, m := range c.Request.Header {
+		for _, v := range m {
+			fmt.Println(t, "value is", v)
+		}
+	}
+
+	// Getting and verifying ip from header
+	realIP := c.Request.Header.Get(clientIpHeader)
+	parsedRealIP := net.ParseIP(realIP)
+	if parsedRealIP == nil {
+		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", clientIpHeader), c)
+		return
+	}
+
+	callSecApi(c, realIP)
+}
+func Healthz(c *gin.Context) {
+	callSecApi(c, "127.0.0.1")
 }
 
 func remedyError(err error, c *gin.Context) {
