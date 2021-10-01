@@ -4,8 +4,10 @@ go 1.17
 
 require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+	github.com/gin-contrib/logger v0.2.0
 	github.com/gin-gonic/gin v1.7.4
-	github.com/stretchr/testify v1.4.0
+	github.com/rs/zerolog v1.25.0
+	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b
 )
 
@@ -25,7 +27,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
-	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
+	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
 

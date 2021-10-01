@@ -51,3 +51,11 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+#          Can't be used with docker 2FA
+#      -
+#        name: Update repo description
+#        uses: peter-evans/dockerhub-description@v2
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+#          repository: fbonalair/traefik-crowdsec-bouncer

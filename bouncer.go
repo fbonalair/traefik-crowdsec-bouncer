@@ -1,23 +1,46 @@
 package main
 
 import (
-	. "github.com/fbonalair/traefik-crowdsec-bouncer/controler"
+	"os"
+
+	"github.com/fbonalair/traefik-crowdsec-bouncer/controler"
+	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
 	router := setupRouter()
 	err := router.Run()
 	if err != nil {
-		println("An error occurred while starting bouncer: ", err)
+		log.Fatal().Err(err).Msgf("An error occurred while starting bouncer")
 		return
 	}
 
 }
 
 func setupRouter() *gin.Engine {
-	router := gin.Default()
-	router.GET("/api/v1/ping", Ping)
-	router.GET("/api/v1/forwardAuth", ForwardAuth)
+	// logger framework
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if gin.IsDebugging() {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Logger = log.Output(
+			zerolog.ConsoleWriter{
+				Out:        os.Stderr,
+				NoColor:    false,
+				TimeFormat: zerolog.TimeFieldFormat,
+			},
+		)
+	}
+
+	// Web framework
+	router := gin.New()
+	router.Use(logger.SetLogger(
+		logger.WithSkipPath([]string{"/api/v1/ping", "/api/v1/healthz"}),
+	))
+	router.GET("/api/v1/ping", controler.Ping)
+	router.GET("/api/v1/healthz", controler.Healthz)
+	router.GET("/api/v1/forwardAuth", controler.ForwardAuth)
 	return router
 }
