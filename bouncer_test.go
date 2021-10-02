@@ -19,6 +19,16 @@ func TestPing(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "pong", w.Body.String())
 }
+func TestHealthz(t *testing.T) {
+	t.Parallel()
+	router := setupRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/v1/healthz", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+}
 
 func TestForwardAuthInvalidIp(t *testing.T) {
 	t.Parallel()
