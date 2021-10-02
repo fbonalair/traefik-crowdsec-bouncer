@@ -14,12 +14,10 @@ import (
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 )
 
 const (
 	clientIpHeader       = "X-Real-Ip"
-	forwardForHeader     = "X-Forwarded-For"
 	crowdsecAuthHeader   = "X-Api-Key"
 	crowdsecBouncerRoute = "v1/decisions"
 )
@@ -34,10 +32,6 @@ var client = &http.Client{
 		IdleConnTimeout: 30 * time.Second,
 	},
 	Timeout: 5 * time.Second,
-}
-
-func Ping(c *gin.Context) {
-	c.String(http.StatusOK, "pong")
 }
 
 func callSecApi(c *gin.Context, realIP string) {
@@ -96,15 +90,6 @@ func callSecApi(c *gin.Context, realIP string) {
 }
 
 func ForwardAuth(c *gin.Context) {
-	// FIXME
-	log.Debug().Msg("Headers are: ")
-	log.Debug().Msgf("forwardForHeader is %s", c.Request.Header.Get(forwardForHeader))
-	for t, m := range c.Request.Header {
-		for _, v := range m {
-			fmt.Println(t, "value is", v)
-		}
-	}
-
 	// Getting and verifying ip from header
 	realIP := c.Request.Header.Get(clientIpHeader)
 	parsedRealIP := net.ParseIP(realIP)
@@ -115,8 +100,13 @@ func ForwardAuth(c *gin.Context) {
 
 	callSecApi(c, realIP)
 }
+
 func Healthz(c *gin.Context) {
 	callSecApi(c, "127.0.0.1")
+}
+
+func Ping(c *gin.Context) {
+	c.String(http.StatusOK, "pong")
 }
 
 func remedyError(err error, c *gin.Context) {
