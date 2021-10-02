@@ -23,7 +23,7 @@ const (
 )
 
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
-var crowdsecBouncerHost = RequiredEnv("CROWDSEC_BOUNCER_HOST")
+var crowdsecBouncerHost = RequiredEnv("CROWDSEC_AGENT_HOST")
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
 
 var client = &http.Client{
@@ -83,7 +83,7 @@ func callSecApi(c *gin.Context, realIP string) {
 
 	// Authorization logic
 	if len(decisions) > 0 {
-		c.Status(http.StatusUnauthorized)
+		c.String(http.StatusForbidden, "Forbidden")
 	} else {
 		c.Status(http.StatusOK)
 	}
@@ -111,5 +111,5 @@ func Ping(c *gin.Context) {
 
 func remedyError(err error, c *gin.Context) {
 	_ = c.Error(err) // nil err should be handled earlier
-	c.Status(http.StatusUnauthorized)
+	c.String(http.StatusForbidden, "Forbidden")
 }

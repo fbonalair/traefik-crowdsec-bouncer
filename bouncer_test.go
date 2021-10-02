@@ -38,7 +38,8 @@ func TestForwardAuthInvalidIp(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/v1/forwardAuth", nil)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 401, w.Code)
+	assert.Equal(t, 403, w.Code)
+	assert.Equal(t, "Forbidden", w.Body.String())
 }
 
 func TestForwardAuthValidIp(t *testing.T) {
