@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   traefik:
-    image: "traefik:v2.5"
+    image: traefik:v2.5
     container_name: "traefik-example"
     command:
 #      - "--log.level=DEBUG"
@@ -12,12 +12,11 @@ services:
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
-      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
   whoami:
-    image: traefik/whoami
+    image: traefik/whoami:latest
     container_name: "simple-service-example"
     labels:
       # Create bouncer middleware
@@ -38,21 +37,15 @@ services:
     depends_on:
       - 'traefik'
     volumes:
-#      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
-#      - logs-example:/var/log/nginx
       - crowdsec-db-example:/var/lib/crowdsec/data/
       - crowdsec-config-example:/etc/crowdsec/
-    ports:
-      - 8083:8080
 
   bouncer:
-    image: fbonalair/bouncer
+    image: fbonalair/traefik-crowdsec-bouncer:0.1.1
     container_name: "bouncer-example"
     environment:
       CROWDSEC_BOUNCER_API_KEY: MyApiKey
-      CROWDSEC_BOUNCER_HOST: crowdsec:8080
-    ports:
-      - "8082:8080"
+      CROWDSEC_AGENT_HOST: crowdsec:8080
 
 volumes:
   logs-example:
