@@ -94,7 +94,7 @@ func ForwardAuth(c *gin.Context) {
 	realIP := c.Request.Header.Get(clientIpHeader)
 	parsedRealIP := net.ParseIP(realIP)
 	if parsedRealIP == nil {
-		remedyError(fmt.Errorf("the header %q isn't a valid IP adress", clientIpHeader), c)
+		remedyError(fmt.Errorf("the header %q isn't a valid IP address", clientIpHeader), c)
 		return
 	}
 
@@ -103,6 +103,7 @@ func ForwardAuth(c *gin.Context) {
 
 func Healthz(c *gin.Context) {
 	callSecApi(c, "127.0.0.1")
+	// TODO log warn if api not joinable
 }
 
 func Ping(c *gin.Context) {

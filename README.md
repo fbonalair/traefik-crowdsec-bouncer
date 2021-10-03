@@ -1,3 +1,10 @@
+![GitHub](https://img.shields.io/github/license/fbonalair/traefik-crowdsec-bouncer)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/fbonalair/traefik-crowdsec-bouncer)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fbonalair/traefik-crowdsec-bouncer)](https://goreportcard.com/report/github.com/fbonalair/traefik-crowdsec-bouncer)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/fbonalair/traefik-crowdsec-bouncer/ci)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/fbonalair/traefik-crowdsec-bouncer)
+![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/fbonalair/traefik-crowdsec-bouncer)
+
 # traefik-crowdsec-bouncer
 A http service to verify request and bounce them according to decisions made by CrowdSec.
 
