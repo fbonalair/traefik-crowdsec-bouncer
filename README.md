@@ -1,7 +1,8 @@
 ![GitHub](https://img.shields.io/github/license/fbonalair/traefik-crowdsec-bouncer)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/fbonalair/traefik-crowdsec-bouncer)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fbonalair/traefik-crowdsec-bouncer)](https://goreportcard.com/report/github.com/fbonalair/traefik-crowdsec-bouncer)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/fbonalair/traefik-crowdsec-bouncer/ci)
+[![Maintainability](https://api.codeclimate.com/v1/badges/7177dce30f0abdf8bcbf/maintainability)](https://codeclimate.com/github/fbonalair/traefik-crowdsec-bouncer/maintainability)
+[![ci](https://github.com/fbonalair/traefik-crowdsec-bouncer/actions/workflows/main.yml/badge.svg)](https://github.com/fbonalair/traefik-crowdsec-bouncer/actions/workflows/main.yml)
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/fbonalair/traefik-crowdsec-bouncer)
 ![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/fbonalair/traefik-crowdsec-bouncer)
 
@@ -26,7 +27,7 @@ docker-compose up -d traefik crowdsec whoami
 ```
 
 ## Procedure
-1. Get an bouncer API key from CrowdSec with command `docker exec crowdsec-example cscli bouncers add traefik-bouncer`
+1. Get a bouncer API key from CrowdSec with command `docker exec crowdsec-example cscli bouncers add traefik-bouncer`
 2. Copy the API key printed. You **_WON'T_** be able the get it again.
 3. Past this key as the value for bouncer environment variable CROWDSEC_BOUNCER_API_KEY, instead of "MyApiKey"
 4. Start bouncer in attach mode with `docker-compose up bouncer`
@@ -53,7 +54,7 @@ Generate a bouncer API key following [CrowdSec documentation](https://doc.crowds
 The webservice configuration is made via environment variables:
 
 * `CROWDSEC_BOUNCER_API_KEY`            - CrowdSec bouncer API key required to be authorized to request local API (required)`
-* `CROWDSEC_AGENT_HOST`                 - Host and port of CrowdSec agent. i.e crowdsec-agent:8080 (required)`
+* `CROWDSEC_AGENT_HOST`                 - Host and port of CrowdSec agent, i.e. crowdsec-agent:8080 (required)`
 * `CROWDSEC_BOUNCER_SCHEME`             - Scheme to query CrowdSec agent. Expected value: http, https. Default to http`
 * `PORT`                                - Change listening port of web server. Default listen on 8080
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
@@ -61,9 +62,13 @@ The webservice configuration is made via environment variables:
 ## Exposed routes
 The webservice exposes 3 routes:
 
-* `/api/v1/forwardAuth`             - Main route to be used by Traefik: query CrowdSec agent with the header `X-Real-Ip` as client IP`
-* `/api/v1/ping`                    - Simple health route that respond pong with http 200`
-* `/api/v1/healthz`                 - Another health route that query CrowdSec agent with localhost (127.0.0.1)`
+* GET `/api/v1/forwardAuth`             - Main route to be used by Traefik: query CrowdSec agent with the header `X-Real-Ip` as client IP`
+* GET `/api/v1/ping`                    - Simple health route that respond pong with http 200`
+* GET `/api/v1/healthz`                 - Another health route that query CrowdSec agent with localhost (127.0.0.1)`
 
 # Contribution
 TBD
+
+## Test Setup 
+1. Adding a banned IP: `cscli decisions add -i 1.2.3.4`
+2. Run test with `godotenv -f ./_test.env go test -cover`
