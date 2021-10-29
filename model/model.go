@@ -1,5 +1,8 @@
 package model
 
+/*
+	Data representing a decision made by Crowdsec
+*/
 type Decision struct {
 	Id        int    `json:"id"`
 	Origin    string `json:"origin"`
