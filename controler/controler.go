@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -124,4 +125,9 @@ func Healthz(c *gin.Context) {
 */
 func Ping(c *gin.Context) {
 	c.String(http.StatusOK, "pong")
+}
+
+func Metrics(c *gin.Context) {
+	handler := promhttp.Handler()
+	handler.ServeHTTP(c.Writer, c.Request)
 }
