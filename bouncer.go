@@ -42,5 +42,6 @@ func setupRouter() *gin.Engine {
 	router.GET("/api/v1/ping", controler.Ping)
 	router.GET("/api/v1/healthz", controler.Healthz)
 	router.GET("/api/v1/forwardAuth", controler.ForwardAuth)
+	router.GET("/api/v1/metrics", controler.Metrics)
 	return router
 }

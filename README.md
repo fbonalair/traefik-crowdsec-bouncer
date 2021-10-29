@@ -60,11 +60,12 @@ The webservice configuration is made via environment variables:
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
 
 ## Exposed routes
-The webservice exposes 3 routes:
+The webservice exposes some routes:
 
 * GET `/api/v1/forwardAuth`             - Main route to be used by Traefik: query CrowdSec agent with the header `X-Real-Ip` as client IP`
 * GET `/api/v1/ping`                    - Simple health route that respond pong with http 200`
 * GET `/api/v1/healthz`                 - Another health route that query CrowdSec agent with localhost (127.0.0.1)`
+* GET `/api/v1/metrics`                 - Prometheus route to scrap metrics
 
 # Contribution
 TBD
