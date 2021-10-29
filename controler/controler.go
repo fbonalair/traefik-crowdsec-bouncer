@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"
 	"io/ioutil"
@@ -27,6 +29,12 @@ const (
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
 var crowdsecBouncerHost = RequiredEnv("CROWDSEC_AGENT_HOST")
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
+var (
+	ipProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "crowdsec_traefik_bouncer_processed_ip_total",
+		Help: "The total number of processed IP",
+	})
+)
 
 var client = &http.Client{
 	Transport: &http.Transport{
@@ -93,6 +101,7 @@ func isIpAuthorized(c *gin.Context, realIP string) (bool, error) {
 	Main route used by Traefik to verify authorization for a request
 */
 func ForwardAuth(c *gin.Context) {
+	ipProcessed.Inc()
 	// Getting and verifying ip from header
 	realIP := c.Request.Header.Get(clientIpHeader)
 
