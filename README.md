@@ -20,7 +20,7 @@ If the client IP is on ban list, it will get a http code 403 response. Otherwise
 You can use the docker-compose in the examples' folder as a starting point.
 Through traefik it exposes the whoami countainer on port 80, with the bouncer accepting and rejecting client IP.   
 Launch your all services except the bouncer with the follow commands:
-```
+```bash
 git clone https://github.com/fbonalair/traefik-crowdsec-bouncer.git
 cd examples
 docker-compose up -d traefik crowdsec whoami 
