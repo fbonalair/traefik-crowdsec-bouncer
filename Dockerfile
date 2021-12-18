@@ -14,5 +14,9 @@ COPY --from=build-env --chown=nonroot:nonroot /go/bin/app /
 # Run as a non root user.
 USER nonroot
 
+ARG BUSYBOX_VERSION=1.31.0-i686-uclibc
+ADD https://busybox.net/downloads/binaries/$BUSYBOX_VERSION/busybox_WGET /wget
+RUN chmod a+x /wget
+
 # Run app
 CMD ["/app"]
