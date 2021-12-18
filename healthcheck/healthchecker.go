@@ -9,7 +9,7 @@ import (
 
 /**
   Simple binary to query bouncer health check route and allow use of docker container health check
-  https://docs.docker.com/engine/reference/builder/#healthcheck
+  For more information, see issue https://github.com/fbonalair/traefik-crowdsec-bouncer/issues/6
 */
 func main() {
 	port := os.Getenv("PORT")
@@ -24,7 +24,6 @@ func main() {
 		log.Fatal("error while requesting bouncer's health check route :", err)
 	}
 
-	log.Print(resp.StatusCode)
 	if resp.StatusCode == http.StatusOK {
 		os.Exit(0)
 	}
