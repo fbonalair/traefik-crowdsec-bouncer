@@ -21,15 +21,15 @@ You can use the docker-compose in the examples' folder as a starting point.
 Through traefik it exposes the whoami countainer on port 80, with the bouncer accepting and rejecting client IP.   
 Launch your all services except the bouncer with the follow commands:
 ```bash
-git clone https://github.com/fbonalair/traefik-crowdsec-bouncer.git
-cd examples
-docker-compose up -d traefik crowdsec whoami 
+git clone https://github.com/fbonalair/traefik-crowdsec-bouncer.git && \
+  cd traefik-crowdsec-bouncer/examples && \
+  docker-compose up -d traefik crowdsec whoami 
 ```
 
 ## Procedure
 1. Get a bouncer API key from CrowdSec with command `docker exec crowdsec-example cscli bouncers add traefik-bouncer`
 2. Copy the API key printed. You **_WON'T_** be able the get it again.
-3. Past this key as the value for bouncer environment variable CROWDSEC_BOUNCER_API_KEY, instead of "MyApiKey"
+3. Paste this key as the value for bouncer environment variable CROWDSEC_BOUNCER_API_KEY, instead of "MyApiKey"
 4. Start bouncer in attach mode with `docker-compose up bouncer`
 5. Start a browser and visit `http://localhost/`. You will see the container whoami page, copy your IP address from X-Real-Ip line (i.e. 192.168.128.1).  
 In your console, you will see lines showing your authorized request (i.e. "status":200).
