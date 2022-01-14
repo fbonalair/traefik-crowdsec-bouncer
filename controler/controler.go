@@ -21,6 +21,7 @@ import (
 
 const (
 	clientIpHeader       = "X-Real-Ip"
+	forwardHeader        = "X-Forwarded-For"
 	crowdsecAuthHeader   = "X-Api-Key"
 	crowdsecBouncerRoute = "v1/decisions"
 	healthCheckIp        = "127.0.0.1"
@@ -47,7 +48,7 @@ var client = &http.Client{
 /**
 Call Crowdsec local IP and with realIP and return true if IP does NOT have a ban decisions.
 */
-func isIpAuthorized(c *gin.Context, realIP string) (bool, error) {
+func isIpAuthorized(realIP string) (bool, error) {
 	// Calling crowdsec API
 	decisionUrl := url.URL{
 		Scheme:   crowdsecBouncerScheme,
@@ -102,10 +103,14 @@ func isIpAuthorized(c *gin.Context, realIP string) (bool, error) {
 */
 func ForwardAuth(c *gin.Context) {
 	ipProcessed.Inc()
+	log.Debug().
+		Str(clientIpHeader, c.Request.Header.Get(forwardHeader)).
+		Str(forwardHeader, c.Request.Header.Get(forwardHeader)).
+		Msg("Handling forwardAuth request")
+
 	// Getting and verifying ip from header
 	realIP := c.Request.Header.Get(clientIpHeader)
-
-	isAuthorized, err := isIpAuthorized(c, realIP)
+	isAuthorized, err := isIpAuthorized(realIP)
 	if err != nil {
 		log.Warn().Err(err).Msgf("An error occurred while checking IP %q", realIP)
 		c.String(http.StatusForbidden, "Forbidden")
@@ -120,7 +125,7 @@ func ForwardAuth(c *gin.Context) {
 	Route to check bouncer connectivity with Crowdsec agent. Mainly use for Kubernetes readiness probe
 */
 func Healthz(c *gin.Context) {
-	isHealthy, err := isIpAuthorized(c, healthCheckIp)
+	isHealthy, err := isIpAuthorized(healthCheckIp)
 	if err != nil || !isHealthy {
 		log.Warn().Err(err).Msgf("The health check did not pass. Check error if present and if the IP %q is authorized", healthCheckIp)
 		c.Status(http.StatusForbidden)

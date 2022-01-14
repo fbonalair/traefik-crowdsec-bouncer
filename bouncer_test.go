@@ -9,7 +9,7 @@ import (
 )
 
 func TestPing(t *testing.T) {
-	router := setupRouter()
+	router, _ := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/ping", nil)
@@ -19,7 +19,7 @@ func TestPing(t *testing.T) {
 	assert.Equal(t, "pong", w.Body.String())
 }
 func TestHealthz(t *testing.T) {
-	router := setupRouter()
+	router, _ := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/healthz", nil)
@@ -29,7 +29,7 @@ func TestHealthz(t *testing.T) {
 }
 
 func TestForwardAuthInvalidIp(t *testing.T) {
-	router := setupRouter()
+	router, _ := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/forwardAuth", nil)
@@ -39,7 +39,7 @@ func TestForwardAuthInvalidIp(t *testing.T) {
 	assert.Equal(t, "Forbidden", w.Body.String())
 }
 func TestForwardAuthBannedIp(t *testing.T) {
-	router := setupRouter()
+	router, _ := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/forwardAuth", nil)
@@ -50,7 +50,7 @@ func TestForwardAuthBannedIp(t *testing.T) {
 	assert.Equal(t, "Forbidden", w.Body.String())
 }
 func TestForwardAuthValidIp(t *testing.T) {
-	router := setupRouter()
+	router, _ := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/forwardAuth", nil)
@@ -60,7 +60,7 @@ func TestForwardAuthValidIp(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 }
 func TestMetrics(t *testing.T) {
-	router := setupRouter()
+	router, _ := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/metrics", nil)
