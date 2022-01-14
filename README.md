@@ -42,7 +42,8 @@ Though the console you will see "status":403.
 Enjoy!
 
 # Usage
-For now, this web service is mainly fought to be used as a container.
+For now, this web service is mainly fought to be used as a container.   
+If you need to build from source, you can get some inspiration from the Dockerfile.
 
 ## Prerequisites
 You should have Traefik v2 and a CrowdSec instance running.   
@@ -56,6 +57,7 @@ The webservice configuration is made via environment variables:
 * `CROWDSEC_BOUNCER_API_KEY`            - CrowdSec bouncer API key required to be authorized to request local API (required)`
 * `CROWDSEC_AGENT_HOST`                 - Host and port of CrowdSec agent, i.e. crowdsec-agent:8080 (required)`
 * `CROWDSEC_BOUNCER_SCHEME`             - Scheme to query CrowdSec agent. Expected value: http, https. Default to http`
+* `CROWDSEC_BOUNCER_LOG_LEVEL`          - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
 * `PORT`                                - Change listening port of web server. Default listen on 8080
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
 
@@ -70,6 +72,7 @@ The webservice exposes some routes:
 # Contribution
 TBD
 
-## Test Setup 
-1. Adding a banned IP: `cscli decisions add -i 1.2.3.4`
-2. Run test with `godotenv -f ./_test.env go test -cover`
+## Local Setup 
+1. Start docker compose with docker-compose up -d 
+2. Adding a banned IP to your crodwsec instance with : `docker exec traefik-crowdsec-bouncer_crowdsec_1 cscli decisions add -i 1.2.3.4`
+3. Run test with `godotenv -f ./_test.env go test -cover`
