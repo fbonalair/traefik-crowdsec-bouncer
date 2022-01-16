@@ -49,25 +49,28 @@ var client = &http.Client{
 Call Crowdsec local IP and with realIP and return true if IP does NOT have a ban decisions.
 */
 func isIpAuthorized(realIP string) (bool, error) {
-	// Calling crowdsec API
+	// Generating crowdsec API request
 	decisionUrl := url.URL{
 		Scheme:   crowdsecBouncerScheme,
 		Host:     crowdsecBouncerHost,
 		Path:     crowdsecBouncerRoute,
 		RawQuery: fmt.Sprintf("type=ban&ip=%s", realIP),
 	}
-
 	req, err := http.NewRequest(http.MethodGet, decisionUrl.String(), nil)
 	if err != nil {
 		return false, err
 	}
 	req.Header.Add(crowdsecAuthHeader, crowdsecBouncerApiKey)
+	log.Debug().
+		Str("method", http.MethodGet).
+		Str("url", decisionUrl.String()).
+		Msg("Request Crowdsec's decision Local API")
+
+	// Calling crowdsec API
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, err
 	}
-
-	// verifying access
 	if resp.StatusCode == http.StatusForbidden {
 		return false, err
 	}
@@ -88,6 +91,7 @@ func isIpAuthorized(realIP string) (bool, error) {
 		return true, nil
 	}
 
+	log.Debug().RawJSON("decisions", reqBody).Msg("Found Crowdsec's decision(s), evaluating ...")
 	var decisions []model.Decision
 	err = json.Unmarshal(reqBody, &decisions)
 	if err != nil {
@@ -104,15 +108,14 @@ func isIpAuthorized(realIP string) (bool, error) {
 func ForwardAuth(c *gin.Context) {
 	ipProcessed.Inc()
 	log.Debug().
-		Str(clientIpHeader, c.Request.Header.Get(forwardHeader)).
 		Str(forwardHeader, c.Request.Header.Get(forwardHeader)).
+		Str(clientIpHeader, c.Request.Header.Get(clientIpHeader)).
 		Msg("Handling forwardAuth request")
 
 	// Getting and verifying ip from header
-	realIP := c.Request.Header.Get(clientIpHeader)
-	isAuthorized, err := isIpAuthorized(realIP)
+	isAuthorized, err := isIpAuthorized(c.Request.Header.Get(clientIpHeader))
 	if err != nil {
-		log.Warn().Err(err).Msgf("An error occurred while checking IP %q", realIP)
+		log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIpHeader))
 		c.String(http.StatusForbidden, "Forbidden")
 	} else if !isAuthorized {
 		c.String(http.StatusForbidden, "Forbidden")
