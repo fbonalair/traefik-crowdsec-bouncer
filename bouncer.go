@@ -48,6 +48,10 @@ func setupRouter() (*gin.Engine, error) {
 
 	// Web framework
 	router := gin.New()
+	err = router.SetTrustedProxies(nil)
+	if err != nil {
+		return nil, err
+	}
 	router.Use(logger.SetLogger(
 		logger.WithSkipPath([]string{"/api/v1/ping", "/api/v1/healthz"}),
 	))
