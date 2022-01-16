@@ -35,7 +35,7 @@ COPY --from=build-env --chown=nonroot:nonroot /go/bin/app /
 USER nonroot
 
 # Using custom health checker
-HEALTHCHECK --interval=10s --timeout=1s \
+HEALTHCHECK --interval=10s --timeout=5s --retries=2\
   CMD ["/healthchecker"]
 
 # Run app
