@@ -9,9 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"strings"
 )
 
 var logLevel = OptionalEnv("CROWDSEC_BOUNCER_LOG_LEVEL", "1")
+var trustedProxiesList = strings.Split(OptionalEnv("TRUSTED_PROXIES", "0.0.0.0/0"), ",")
 
 func main() {
 	router, err := setupRouter()
@@ -48,7 +50,7 @@ func setupRouter() (*gin.Engine, error) {
 
 	// Web framework
 	router := gin.New()
-	err = router.SetTrustedProxies(nil)
+	err = router.SetTrustedProxies(trustedProxiesList)
 	if err != nil {
 		return nil, err
 	}

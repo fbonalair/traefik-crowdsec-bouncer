@@ -108,12 +108,13 @@ func isIpAuthorized(realIP string) (bool, error) {
 func ForwardAuth(c *gin.Context) {
 	ipProcessed.Inc()
 	log.Debug().
+		Str("ClientIP", c.ClientIP()).
 		Str(forwardHeader, c.Request.Header.Get(forwardHeader)).
 		Str(clientIpHeader, c.Request.Header.Get(clientIpHeader)).
 		Msg("Handling forwardAuth request")
 
-	// Getting and verifying ip from header
-	isAuthorized, err := isIpAuthorized(c.Request.Header.Get(clientIpHeader))
+	// Getting and verifying ip using ClientIP function
+	isAuthorized, err := isIpAuthorized(c.ClientIP())
 	if err != nil {
 		log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIpHeader))
 		c.String(http.StatusForbidden, "Forbidden")
