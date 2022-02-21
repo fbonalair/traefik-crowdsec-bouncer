@@ -43,7 +43,7 @@ func TestForwardAuthBannedIp(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/forwardAuth", nil)
-	req.Header.Add("X-Real-Ip", "1.2.3.4")
+	req.RemoteAddr = "1.2.3.4:48328"
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 403, w.Code)
@@ -54,7 +54,7 @@ func TestForwardAuthValidIp(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/forwardAuth", nil)
-	req.Header.Add("X-Real-Ip", "127.0.0.1")
+	req.RemoteAddr = "127.0.0.1:48328"
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)

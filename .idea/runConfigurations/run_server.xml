@@ -6,6 +6,7 @@
       <env name="PORT" value="8081" />
       <env name="CROWDSEC_BOUNCER_API_KEY" value="40796d93c2958f9e58345514e67740e5" />
       <env name="CROWDSEC_AGENT_HOST" value="localhost:8083" />
+      <env name="CROWDSEC_BOUNCER_LOG_LEVEL" value="0" />
     </envs>
     <kind value="FILE" />
     <directory value="$PROJECT_DIR$" />

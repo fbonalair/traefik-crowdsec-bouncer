@@ -60,7 +60,7 @@ The webservice configuration is made via environment variables:
 * `CROWDSEC_BOUNCER_LOG_LEVEL`          - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
 * `PORT`                                - Change listening port of web server. Default listen on 8080
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
-* `TRUSTED_PROXIES`                     - Can accept a list of IP addresses in CIDR format, delimited by ','. Default is 0.0.0.0/0
+* `TRUSTED_PROXIES`                     - List of trusted proxies IP addresses in CIDR format, delimited by ','. Default of 0.0.0.0/0 should be fine for most use cases, but you HAVE to add them directly in traefik. 
 
 ## Exposed routes
 The webservice exposes some routes:
@@ -71,7 +71,7 @@ The webservice exposes some routes:
 * GET `/api/v1/metrics`                 - Prometheus route to scrap metrics
 
 # Contribution
-TBD
+Any constructive feedback is welcome, fill free to add an issue or a pull request. I will review it and integrate it to the code.    
 
 ## Local Setup 
 1. Start docker compose with docker-compose up -d 
