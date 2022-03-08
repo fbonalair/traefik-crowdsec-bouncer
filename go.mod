@@ -13,6 +13,7 @@ require (
 )
 
 require (
+	github.com/ReneKroon/ttlcache v1.7.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
