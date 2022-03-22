@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   traefik:
-    image: "traefik:v2.5"
+    image: traefik:v2.6
     container_name: "traefik"
     command:
 #      - "--log.level=DEBUG"
@@ -29,7 +29,7 @@ services:
       - "traefik.http.routers.whoami.middlewares=crowdsec-bouncer@docker"
 
   crowdsec:
-    image: crowdsecurity/crowdsec:v1.2.0
+    image: crowdsecurity/crowdsec:v1.3.2
     environment:
       COLLECTIONS: "crowdsecurity/nginx"
       GID: "${GID-1000}"

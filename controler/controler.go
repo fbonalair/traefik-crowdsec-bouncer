@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"time"
 
+	. "github.com/fbonalair/traefik-crowdsec-bouncer/caches"
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,10 @@ var (
 	ipProcessed = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "crowdsec_traefik_bouncer_processed_ip_total",
 		Help: "The total number of processed IP",
+	}) // TODO add counters for cache hits and cache count
+	cache, _ = NewLocalCache(DecisionCacheConfig{ // FIXME handle error
+		MaxItems:  500,
+		MaxMemory: 500,
 	})
 )
 
@@ -49,7 +54,13 @@ var client = &http.Client{
 Call Crowdsec local IP and with realIP and return true if IP does NOT have a ban decisions.
 */
 func isIpAuthorized(clientIP string) (bool, error) {
-	// TODO request cache first
+	isAuthorized, err := cache.GetDecision(clientIP)
+	if err != nil {
+		log.Debug().Err(err).Str("clientIP", clientIP).Msgf("Cache miss")
+	} else {
+		log.Debug().Err(err).Str("clientIP", clientIP).Msgf("Cache hit")
+		return isAuthorized, nil
+	}
 
 	// Generating crowdsec API request
 	decisionUrl := url.URL{
@@ -101,7 +112,12 @@ func isIpAuthorized(clientIP string) (bool, error) {
 	}
 
 	// Authorization logic
-	return len(decisions) < 0, nil
+	isAuthorized = len(decisions) < 0
+	err = cache.SetDecision(clientIP, isAuthorized, 4*time.Hour) // FIXME convert decision string duration to real duration
+	if err != nil {
+		log.Warn().Err(err).Str("ClientIP", clientIP).Msg("Error while setting decision into cache")
+	}
+	return isAuthorized, nil
 }
 
 /*

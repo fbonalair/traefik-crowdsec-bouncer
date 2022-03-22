@@ -3,6 +3,7 @@ module github.com/fbonalair/traefik-crowdsec-bouncer
 go 1.17
 
 require (
+	github.com/ReneKroon/ttlcache v1.7.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/gin-contrib/logger v0.2.0
 	github.com/gin-gonic/gin v1.7.7
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	github.com/ReneKroon/ttlcache v1.7.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -45,3 +45,5 @@ replace github.com/fbonalair/traefik-crowdsec-bouncer/config => ../config
 replace github.com/fbonalair/traefik-crowdsec-bouncer/model => ../model
 
 replace github.com/fbonalair/traefik-crowdsec-bouncer/controler => ../controler
+
+replace github.com/fbonalair/traefik-crowdsec-bouncer/caches => ../caches
