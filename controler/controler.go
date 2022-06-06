@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"time"
 
-	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -30,6 +29,7 @@ const (
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
 var crowdsecBouncerHost = RequiredEnv("CROWDSEC_AGENT_HOST")
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
+var crowdsecBanResponseCode = OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_CODE", "403") // Validated via ValidateEnv()
 var (
 	ipProcessed = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "crowdsec_traefik_bouncer_processed_ip_total",
