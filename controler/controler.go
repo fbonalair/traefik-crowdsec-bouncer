@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
@@ -30,6 +31,8 @@ const (
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
 var crowdsecBouncerHost = RequiredEnv("CROWDSEC_AGENT_HOST")
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
+var crowdsecBanResponseCode, _ = strconv.Atoi(OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_CODE", "403")) // Validated via ValidateEnv()
+var crowdsecBanResponseMsg = OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_MSG", "Forbidden")
 var (
 	ipProcessed = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "crowdsec_traefik_bouncer_processed_ip_total",
@@ -120,9 +123,9 @@ func ForwardAuth(c *gin.Context) {
 	isAuthorized, err := isIpAuthorized(clientIP)
 	if err != nil {
 		log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIP))
-		c.String(http.StatusForbidden, "Forbidden")
+		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
 	} else if !isAuthorized {
-		c.String(http.StatusForbidden, "Forbidden")
+		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
 	} else {
 		c.Status(http.StatusOK)
 	}

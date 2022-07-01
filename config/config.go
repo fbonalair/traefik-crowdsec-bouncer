@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 )
 
 /*
@@ -45,4 +46,20 @@ func contains(source []string, target string) bool {
 		}
 	}
 	return false
+}
+
+/*
+	Function for custom validation of configuration that will panic if values are not expected.
+	//FIXME it's a first start before centralizing configuration then injection of dependency.
+*/
+func ValidateEnv() {
+	// Validate Ban response code is a valid http response code
+	banResponseCode := OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_CODE", "403")
+	parsedCode, err := strconv.Atoi(banResponseCode)
+	if err != nil {
+		log.Fatalf("The value for env var %s is not an int. It should be a valid http response code.", "CROWDSEC_BOUNCER_BAN_RESPONSE_CODE")
+	}
+	if parsedCode < 100 || parsedCode > 599 {
+		log.Fatalf("The value for env var %s should be a valid http response code between 100 and 599 included.", "CROWDSEC_BOUNCER_BAN_RESPONSE_CODE")
+	}
 }

@@ -16,6 +16,7 @@ var logLevel = OptionalEnv("CROWDSEC_BOUNCER_LOG_LEVEL", "1")
 var trustedProxiesList = strings.Split(OptionalEnv("TRUSTED_PROXIES", "0.0.0.0/0"), ",")
 
 func main() {
+	ValidateEnv()
 	router, err := setupRouter()
 	if err != nil {
 		log.Fatal().Err(err).Msgf("An error occurred while starting webserver")

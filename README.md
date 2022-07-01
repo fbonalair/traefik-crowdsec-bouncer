@@ -58,6 +58,8 @@ The webservice configuration is made via environment variables:
 * `CROWDSEC_AGENT_HOST`                 - Host and port of CrowdSec agent, i.e. crowdsec-agent:8080 (required)`
 * `CROWDSEC_BOUNCER_SCHEME`             - Scheme to query CrowdSec agent. Expected value: http, https. Default to http`
 * `CROWDSEC_BOUNCER_LOG_LEVEL`          - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
+* `CROWDSEC_BOUNCER_BAN_RESPONSE_CODE`  - HTTP code to respond in case of ban. Default to 403
+* `CROWDSEC_BOUNCER_BAN_RESPONSE_MSG`   - HTTP body as message to respond in case of ban. Default to Forbidden
 * `PORT`                                - Change listening port of web server. Default listen on 8080
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
 * `TRUSTED_PROXIES`                     - List of trusted proxies IP addresses in CIDR format, delimited by ','. Default of 0.0.0.0/0 should be fine for most use cases, but you HAVE to add them directly in traefik. 
@@ -75,5 +77,8 @@ Any constructive feedback is welcome, fill free to add an issue or a pull reques
 
 ## Local Setup 
 1. Start docker compose with docker-compose up -d 
-2. Adding a banned IP to your crodwsec instance with : `docker exec traefik-crowdsec-bouncer_crowdsec_1 cscli decisions add -i 1.2.3.4`
-3. Run test with `godotenv -f ./_test.env go test -cover`
+2. Create `_test.env` from template `_test.env.example` such as `cp _test.env.example _test.env`
+3. Get an API key for your bouncer with : ` docker exec traefik-crowdsec-bouncer-crowdsec-1 cscli bouncers add traefik-bouncer`
+4. In `_test.env` replace `<your_generated_api_key>` with the previously generated key
+5. Adding a banned IP to your crodwsec instance with : `docker exec traefik-crowdsec-bouncer-crowdsec-1 cscli decisions add -i 1.2.3.4`
+6. Run test with `godotenv -f ./_test.env go test -cover`
