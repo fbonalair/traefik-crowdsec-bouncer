@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/model"
@@ -51,7 +53,7 @@ var client = &http.Client{
 /**
 Call Crowdsec local IP and with realIP and return true if IP does NOT have a ban decisions.
 */
-func isIpAuthorized(clientIP string) (bool, error) {
+func isIpAuthorized(clientIP string, lc *cache.Cache) (bool, error) {
 	// Generating crowdsec API request
 	decisionUrl := url.URL{
 		Scheme:   crowdsecBouncerScheme,
@@ -64,7 +66,7 @@ func isIpAuthorized(clientIP string) (bool, error) {
 		return false, err
 	}
 	req.Header.Add(crowdsecAuthHeader, crowdsecBouncerApiKey)
-	log.Debug().
+	log.Info().
 		Str("method", http.MethodGet).
 		Str("url", decisionUrl.String()).
 		Msg("Request Crowdsec's decision Local API")
@@ -90,11 +92,12 @@ func isIpAuthorized(clientIP string) (bool, error) {
 		return false, err
 	}
 	if bytes.Equal(reqBody, []byte("null")) {
-		log.Debug().Msgf("No decision for IP %q. Accepting", clientIP)
+		log.Info().Msgf("No decision for IP %q. Accepting", clientIP)
+		cacheCleanIP(lc, clientIP)
 		return true, nil
 	}
 
-	log.Debug().RawJSON("decisions", reqBody).Msg("Found Crowdsec's decision(s), evaluating ...")
+	log.Info().RawJSON("decisions", reqBody).Msg("Found Crowdsec's decision(s), evaluating ...")
 	var decisions []model.Decision
 	err = json.Unmarshal(reqBody, &decisions)
 	if err != nil {
@@ -102,7 +105,56 @@ func isIpAuthorized(clientIP string) (bool, error) {
 	}
 
 	// Authorization logic
-	return len(decisions) < 0, nil
+	if len(decisions) > 0 {
+		cacheDecisionResult(lc, decisions)
+		return false, nil
+	} else {
+		cacheCleanIP(lc, clientIP)
+		return true, nil
+	}
+
+}
+
+func cacheDecisionResult(lc *cache.Cache, decisions []model.Decision) {
+	for _, d := range decisions {
+		addToCache(lc, d)
+	}
+}
+
+func cacheCleanIP(lc *cache.Cache, clientIP string) {
+	d := model.Decision{}
+	d.Value = clientIP
+	// use configuration value here
+	d.Duration = "4h00m00.00000000s"
+	addToCache(lc, d)
+}
+
+func addToCache(lc *cache.Cache, d model.Decision) {
+	// TODO: test if localCache is in use
+	log.Info().Msg("Add IP to local cache")
+	lc.Set(d.Value, d, cache.DefaultExpiration)
+}
+
+/*
+   Get Local cache result for the IP
+*/
+func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcBan bool) {
+	log.Info().
+		Msg("Request IP in local cache")
+	if cachedIP, found := lc.Get(clientIP); found {
+		value := cachedIP.(model.Decision)
+		log.Info().
+			Str("ClientIP", value.Value).
+			Msg("IP was found in local cache")
+		// check if the result is positiv
+		return true, false
+	} else {
+		log.Info().
+			Str("ClientIP", clientIP).
+			Msg("IP was not found in local cache")
+		return false, false
+	}
+
 }
 
 /*
@@ -112,22 +164,32 @@ func ForwardAuth(c *gin.Context) {
 	ipProcessed.Inc()
 	clientIP := c.ClientIP()
 
-	log.Debug().
+	log.Info().
 		Str("ClientIP", clientIP).
 		Str("RemoteAddr", c.Request.RemoteAddr).
 		Str(forwardHeader, c.Request.Header.Get(forwardHeader)).
 		Str(realIpHeader, c.Request.Header.Get(realIpHeader)).
 		Msg("Handling forwardAuth request")
 
-	// Getting and verifying ip using ClientIP function
-	isAuthorized, err := isIpAuthorized(clientIP)
-	if err != nil {
-		log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIP))
+	// check local cache
+	lc := c.MustGet("lc").(cache.Cache)
+	lcFound, lcBan := getLocalCache(&lc, clientIP)
+	log.Info().Bool("lcFound", lcFound).Bool("lcBan", lcBan).Msg("Works")
+	if lcBan {
 		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
-	} else if !isAuthorized {
-		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
-	} else {
+	} else if lcFound {
 		c.Status(http.StatusOK)
+	} else {
+		// Getting and verifying ip using ClientIP function
+		isAuthorized, err := isIpAuthorized(clientIP, &lc)
+		if err != nil {
+			log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIP))
+			c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
+		} else if !isAuthorized {
+			c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
+		} else {
+			c.Status(http.StatusOK)
+		}
 	}
 }
 
@@ -135,7 +197,7 @@ func ForwardAuth(c *gin.Context) {
 	Route to check bouncer connectivity with Crowdsec agent. Mainly use for Kubernetes readiness probe
 */
 func Healthz(c *gin.Context) {
-	isHealthy, err := isIpAuthorized(healthCheckIp)
+	isHealthy, err := isIpAuthorized(healthCheckIp, nil)
 	if err != nil || !isHealthy {
 		log.Warn().Err(err).Msgf("The health check did not pass. Check error if present and if the IP %q is authorized", healthCheckIp)
 		c.Status(http.StatusForbidden)

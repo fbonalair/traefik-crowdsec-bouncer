@@ -2,14 +2,17 @@ package main
 
 import (
 	"os"
+	"time"
+
+	"strings"
 
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/controler"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/patrickmn/go-cache"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"strings"
 )
 
 var logLevel = OptionalEnv("CROWDSEC_BOUNCER_LOG_LEVEL", "1")
@@ -31,6 +34,13 @@ func main() {
 
 }
 
+func CacheMiddleware(lc cache.Cache) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("lc", lc)
+		c.Next()
+	}
+}
+
 func setupRouter() (*gin.Engine, error) {
 	// logger framework
 	if gin.IsDebugging() {
@@ -49,6 +59,9 @@ func setupRouter() (*gin.Engine, error) {
 	}
 	zerolog.SetGlobalLevel(level)
 
+	// local go-cache
+	lc := cache.New(5*time.Minute, 10*time.Minute)
+
 	// Web framework
 	router := gin.New()
 	err = router.SetTrustedProxies(trustedProxiesList)
@@ -58,6 +71,7 @@ func setupRouter() (*gin.Engine, error) {
 	router.Use(logger.SetLogger(
 		logger.WithSkipPath([]string{"/api/v1/ping", "/api/v1/healthz"}),
 	))
+	router.Use(CacheMiddleware(*lc))
 	router.GET("/api/v1/ping", controler.Ping)
 	router.GET("/api/v1/healthz", controler.Healthz)
 	router.GET("/api/v1/forwardAuth", controler.ForwardAuth)
