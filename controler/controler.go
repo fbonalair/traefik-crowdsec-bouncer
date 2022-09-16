@@ -53,7 +53,7 @@ var client = &http.Client{
 /**
 Call Crowdsec local IP and with realIP and return true if IP does NOT have a ban decisions.
 */
-func isIpAuthorized(clientIP string) (bool, error) {
+func isIpAuthorized(clientIP string) (authorized bool, decisions []model.Decision, err error) {
 	// Generating crowdsec API request
 	decisionUrl := url.URL{
 		Scheme:   crowdsecBouncerScheme,
@@ -63,7 +63,7 @@ func isIpAuthorized(clientIP string) (bool, error) {
 	}
 	req, err := http.NewRequest(http.MethodGet, decisionUrl.String(), nil)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 	req.Header.Add(crowdsecAuthHeader, crowdsecBouncerApiKey)
 	log.Debug().
@@ -74,10 +74,10 @@ func isIpAuthorized(clientIP string) (bool, error) {
 	// Calling crowdsec API
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 	if resp.StatusCode == http.StatusForbidden {
-		return false, err
+		return false, nil, err
 	}
 
 	// Parsing response
@@ -89,39 +89,36 @@ func isIpAuthorized(clientIP string) (bool, error) {
 	}(resp.Body)
 	reqBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 	if bytes.Equal(reqBody, []byte("null")) {
 		log.Debug().Msgf("No decision for IP %q. Accepting", clientIP)
-		return true, nil
+		return true, nil, nil
 	}
 
 	log.Debug().RawJSON("decisions", reqBody).Msg("Found Crowdsec's decision(s), evaluating ...")
-	var decisions []model.Decision
 	err = json.Unmarshal(reqBody, &decisions)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	// Authorization logic
 	if len(decisions) > 0 {
-		return true, nil
+		return true, decisions, nil
 	} else {
-		return false, nil
+		return false, nil, nil
 	}
 }
 
 /*
 	Add to the cache information about the IP
 */
-func addToCache(lc *cache.Cache, clientIP string, authorized bool) {
+func addToCache(lc *cache.Cache, d model.Decision) {
 	if lc != nil {
-		d := model.Decision{}
-		d.Value = clientIP
-		// use configuration value here
-		d.Duration = cache.DefaultExpiration.String()
-		d.Authorized = authorized
-		log.Debug().Msg("Add IP to local cache")
+		// decisions returned is an array
+		// since IP are uniq in the store, we can have only one value stored
+		log.Debug().Interface("decision", d).Msg("Add IP to local cache")
+
 		duration, err := time.ParseDuration(d.Duration)
 		if err != nil {
 			log.Warn().Str("Duration", duration.String()).Msg("Error parsing duration provided")
@@ -143,7 +140,6 @@ func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcAuthorized
 			log.Debug().
 				Str("ClientIP", value.Value).
 				Msg("IP was found in local cache")
-
 			// check if the result is lcAuthorized
 			return true, value.Authorized
 		} else {
@@ -184,15 +180,25 @@ func ForwardAuth(c *gin.Context) {
 	} else {
 		// Getting and verifying ip using ClientIP function
 		// We should look at the cache in the isIPAuthorized
-		isAuthorized, err := isIpAuthorized(clientIP)
+		isAuthorized, decisions, err := isIpAuthorized(clientIP)
 		if err != nil {
 			log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIP))
 			c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
 		} else if !isAuthorized {
-			addToCache(lc, clientIP, false)
+			// result is authorized = false, we take the first decision returned by lapi
+			log.Debug().Msg("Not Authorized")
+			d := decisions[0]
+			d.Authorized = false
+			addToCache(lc, d)
 			c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
 		} else {
-			addToCache(lc, clientIP, true)
+			// result is autorized = true (nil), we create a decision based on the IP
+			log.Debug().Msg("Authorized")
+			var d model.Decision
+			d.Duration = "10m"
+			d.Value = clientIP
+			d.Authorized = true
+			addToCache(lc, d)
 			c.Status(http.StatusOK)
 		}
 	}
@@ -202,7 +208,7 @@ func ForwardAuth(c *gin.Context) {
 	Route to check bouncer connectivity with Crowdsec agent. Mainly use for Kubernetes readiness probe
 */
 func Healthz(c *gin.Context) {
-	isHealthy, err := isIpAuthorized(healthCheckIp)
+	isHealthy, _, err := isIpAuthorized(healthCheckIp)
 	if err != nil || !isHealthy {
 		log.Warn().Err(err).Msgf("The health check did not pass. Check error if present and if the IP %q is authorized", healthCheckIp)
 		c.Status(http.StatusForbidden)
