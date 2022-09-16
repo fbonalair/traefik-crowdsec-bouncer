@@ -60,6 +60,9 @@ The webservice configuration is made via environment variables:
 * `CROWDSEC_BOUNCER_LOG_LEVEL`          - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_CODE`  - HTTP code to respond in case of ban. Default to 403
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_MSG`   - HTTP body as message to respond in case of ban. Default to Forbidden
+* `CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE` - Configure the use of a local cache in memory. Default to false
+* `CROWDSEC_DEFAULT_CACHE_DURATION`     - Configure default duration of the cached data. Default to "4h00m00s"
+crowdsecDefaultCacheDuration
 * `PORT`                                - Change listening port of web server. Default listen on 8080
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
 * `TRUSTED_PROXIES`                     - List of trusted proxies IP addresses in CIDR format, delimited by ','. Default of 0.0.0.0/0 should be fine for most use cases, but you HAVE to add them directly in traefik. 
@@ -82,3 +85,5 @@ Any constructive feedback is welcome, fill free to add an issue or a pull reques
 4. In `_test.env` replace `<your_generated_api_key>` with the previously generated key
 5. Adding a banned IP to your crodwsec instance with : `docker exec traefik-crowdsec-bouncer-crowdsec-1 cscli decisions add -i 1.2.3.4`
 6. Run test with `godotenv -f ./_test.env go test -cover`
+
+NB: Be aware that you cannot use network_mode: host with Docker Desktop on Windows. It is used in the docker-compose.yaml file for the traefik container to be able to contact a local instance of the bouncer through localhost

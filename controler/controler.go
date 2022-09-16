@@ -66,7 +66,7 @@ func isIpAuthorized(clientIP string, lc *cache.Cache) (bool, error) {
 		return false, err
 	}
 	req.Header.Add(crowdsecAuthHeader, crowdsecBouncerApiKey)
-	log.Info().
+	log.Debug().
 		Str("method", http.MethodGet).
 		Str("url", decisionUrl.String()).
 		Msg("Request Crowdsec's decision Local API")
@@ -92,12 +92,12 @@ func isIpAuthorized(clientIP string, lc *cache.Cache) (bool, error) {
 		return false, err
 	}
 	if bytes.Equal(reqBody, []byte("null")) {
-		log.Info().Msgf("No decision for IP %q. Accepting", clientIP)
+		log.Debug().Msgf("No decision for IP %q. Accepting", clientIP)
 		cacheCleanIP(lc, clientIP)
 		return true, nil
 	}
 
-	log.Info().RawJSON("decisions", reqBody).Msg("Found Crowdsec's decision(s), evaluating ...")
+	log.Debug().RawJSON("decisions", reqBody).Msg("Found Crowdsec's decision(s), evaluating ...")
 	var decisions []model.Decision
 	err = json.Unmarshal(reqBody, &decisions)
 	if err != nil {
@@ -115,46 +115,65 @@ func isIpAuthorized(clientIP string, lc *cache.Cache) (bool, error) {
 
 }
 
+/*
+	Handle the array of decision result and add to cache
+*/
 func cacheDecisionResult(lc *cache.Cache, decisions []model.Decision) {
 	for _, d := range decisions {
 		addToCache(lc, d)
 	}
 }
 
+/*
+	Add to the cache a clean IP
+*/
 func cacheCleanIP(lc *cache.Cache, clientIP string) {
-	d := model.Decision{}
-	d.Value = clientIP
-	// use configuration value here
-	d.Duration = "4h00m00.00000000s"
-	addToCache(lc, d)
+	if lc != nil {
+		d := model.Decision{}
+		d.Value = clientIP
+		// use configuration value here
+		d.Duration = cache.DefaultExpiration.String()
+		addToCache(lc, d)
+	}
 }
 
+/*
+	Add to the cache information about the IP
+*/
 func addToCache(lc *cache.Cache, d model.Decision) {
-	// TODO: test if localCache is in use
-	log.Info().Msg("Add IP to local cache")
-	lc.Set(d.Value, d, cache.DefaultExpiration)
+	if lc != nil {
+		log.Debug().Msg("Add IP to local cache")
+		duration, err := time.ParseDuration(d.Duration)
+		if err != nil {
+			log.Warn().Str("Duration", duration.String()).Msg("Error parsing duration provided")
+			duration, _ = time.ParseDuration(cache.DefaultExpiration.String())
+		}
+		lc.Set(d.Value, d, duration)
+	}
 }
 
 /*
    Get Local cache result for the IP
 */
 func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcBan bool) {
-	log.Info().
-		Msg("Request IP in local cache")
-	if cachedIP, found := lc.Get(clientIP); found {
-		value := cachedIP.(model.Decision)
-		log.Info().
-			Str("ClientIP", value.Value).
-			Msg("IP was found in local cache")
-		// check if the result is positiv
-		return true, false
-	} else {
-		log.Info().
-			Str("ClientIP", clientIP).
-			Msg("IP was not found in local cache")
-		return false, false
+	log.Debug().
+		Msg("Check if IP is in the local cache")
+	if lc != nil {
+		if cachedIP, found := lc.Get(clientIP); found {
+			value := cachedIP.(model.Decision)
+			log.Debug().
+				Str("ClientIP", value.Value).
+				Msg("IP was found in local cache")
+			// check if the result is positiv
+			return true, false
+		} else {
+			log.Debug().
+				Str("ClientIP", clientIP).
+				Msg("IP was not found in local cache")
+			return false, false
+		}
 	}
-
+	return false, false
 }
 
 /*
@@ -164,7 +183,7 @@ func ForwardAuth(c *gin.Context) {
 	ipProcessed.Inc()
 	clientIP := c.ClientIP()
 
-	log.Info().
+	log.Debug().
 		Str("ClientIP", clientIP).
 		Str("RemoteAddr", c.Request.RemoteAddr).
 		Str(forwardHeader, c.Request.Header.Get(forwardHeader)).
@@ -172,16 +191,19 @@ func ForwardAuth(c *gin.Context) {
 		Msg("Handling forwardAuth request")
 
 	// check local cache
-	lc := c.MustGet("lc").(cache.Cache)
-	lcFound, lcBan := getLocalCache(&lc, clientIP)
-	log.Info().Bool("lcFound", lcFound).Bool("lcBan", lcBan).Msg("Works")
+	lc := c.MustGet("lc").(*cache.Cache)
+
+	lcFound, lcBan := getLocalCache(lc, clientIP)
+	log.Debug().Bool("lcFound", lcFound).Bool("lcBan", lcBan).Msg("Works")
+	// the IP was banned and found in the cache
 	if lcBan {
 		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
+		// The IP has been found in the cache but was not banned before
 	} else if lcFound {
 		c.Status(http.StatusOK)
 	} else {
 		// Getting and verifying ip using ClientIP function
-		isAuthorized, err := isIpAuthorized(clientIP, &lc)
+		isAuthorized, err := isIpAuthorized(clientIP, lc)
 		if err != nil {
 			log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIP))
 			c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)

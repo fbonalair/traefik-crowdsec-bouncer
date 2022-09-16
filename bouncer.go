@@ -17,6 +17,8 @@ import (
 
 var logLevel = OptionalEnv("CROWDSEC_BOUNCER_LOG_LEVEL", "1")
 var trustedProxiesList = strings.Split(OptionalEnv("TRUSTED_PROXIES", "0.0.0.0/0"), ",")
+var crowdsecDefaultCacheDuration = OptionalEnv("CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE", "4h00m00s")
+var crowdsecEnableLocalCache = OptionalEnv("CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE", "false")
 
 func main() {
 	ValidateEnv()
@@ -34,7 +36,7 @@ func main() {
 
 }
 
-func CacheMiddleware(lc cache.Cache) gin.HandlerFunc {
+func CacheMiddleware(lc *cache.Cache) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("lc", lc)
 		c.Next()
@@ -60,7 +62,17 @@ func setupRouter() (*gin.Engine, error) {
 	zerolog.SetGlobalLevel(level)
 
 	// local go-cache
-	lc := cache.New(5*time.Minute, 10*time.Minute)
+	var lc *cache.Cache
+	if crowdsecEnableLocalCache == "true" {
+		duration, err := time.ParseDuration(crowdsecDefaultCacheDuration)
+		if err != nil {
+			log.Warn().Msg("Duration provided is not valid, defaulting to 4h00m00s")
+			duration, _ = time.ParseDuration("4h")
+		}
+		lc = cache.New(duration, 5*time.Minute)
+	} else {
+		lc = nil
+	}
 
 	// Web framework
 	router := gin.New()
@@ -71,7 +83,7 @@ func setupRouter() (*gin.Engine, error) {
 	router.Use(logger.SetLogger(
 		logger.WithSkipPath([]string{"/api/v1/ping", "/api/v1/healthz"}),
 	))
-	router.Use(CacheMiddleware(*lc))
+	router.Use(CacheMiddleware(lc))
 	router.GET("/api/v1/ping", controler.Ping)
 	router.GET("/api/v1/healthz", controler.Healthz)
 	router.GET("/api/v1/forwardAuth", controler.ForwardAuth)

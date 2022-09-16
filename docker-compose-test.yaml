@@ -37,7 +37,7 @@ services:
     depends_on:
       - 'traefik'
     volumes:
-      # - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
       - logs:/var/log/nginx
       - crowdsec-db:/var/lib/crowdsec/data/
       - crowdsec-config:/etc/crowdsec/
@@ -50,7 +50,7 @@ services:
     container_name: bouncer
     environment:
       PORT: 8082
-      CROWDSEC_BOUNCER_API_KEY: ef1014d3932911ce703bfc54b8dd9847
+      CROWDSEC_BOUNCER_API_KEY: 40796d93c2958f9e58345514e67740e5
       CROWDSEC_AGENT_HOST: crowdsec:8083
     ports:
       - "8082:8080"
