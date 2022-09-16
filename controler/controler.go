@@ -35,6 +35,7 @@ var crowdsecBouncerHost = RequiredEnv("CROWDSEC_AGENT_HOST")
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
 var crowdsecBanResponseCode, _ = strconv.Atoi(OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_CODE", "403")) // Validated via ValidateEnv()
 var crowdsecBanResponseMsg = OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_MSG", "Forbidden")
+var crowdsecDefaultCacheDuration = OptionalEnv("CROWDSEC_BOUNCER_DEFAULT_CACHE_DURATION", "15m00s")
 var (
 	ipProcessed = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "crowdsec_traefik_bouncer_processed_ip_total",
@@ -104,9 +105,9 @@ func isIpAuthorized(clientIP string) (authorized bool, decisions []model.Decisio
 
 	// Authorization logic
 	if len(decisions) > 0 {
-		return true, decisions, nil
+		return false, decisions, nil
 	} else {
-		return false, nil, nil
+		return true, nil, nil
 	}
 }
 
@@ -135,10 +136,12 @@ func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcAuthorized
 	log.Debug().
 		Msg("Check if IP is in the local cache")
 	if lc != nil {
-		if cachedIP, found := lc.Get(clientIP); found {
+		if cachedIP, time, found := lc.GetWithExpiration(clientIP); found {
 			value := cachedIP.(model.Decision)
 			log.Debug().
 				Str("ClientIP", value.Value).
+				Time("expirationTime", time).
+				Str("duration", value.Duration).
 				Msg("IP was found in local cache")
 			// check if the result is lcAuthorized
 			return true, value.Authorized
@@ -195,7 +198,7 @@ func ForwardAuth(c *gin.Context) {
 			// result is autorized = true (nil), we create a decision based on the IP
 			log.Debug().Msg("Authorized")
 			var d model.Decision
-			d.Duration = "10m"
+			d.Duration = crowdsecDefaultCacheDuration
 			d.Value = clientIP
 			d.Authorized = true
 			addToCache(lc, d)

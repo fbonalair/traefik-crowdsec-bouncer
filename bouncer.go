@@ -17,7 +17,7 @@ import (
 
 var logLevel = OptionalEnv("CROWDSEC_BOUNCER_LOG_LEVEL", "1")
 var trustedProxiesList = strings.Split(OptionalEnv("TRUSTED_PROXIES", "0.0.0.0/0"), ",")
-var crowdsecDefaultCacheDuration = OptionalEnv("CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE", "4h00m00s")
+var crowdsecDefaultCacheDuration = OptionalEnv("CROWDSEC_BOUNCER_DEFAULT_CACHE_DURATION", "15m00s")
 var crowdsecEnableLocalCache = OptionalEnv("CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE", "false")
 
 func main() {
@@ -66,8 +66,8 @@ func setupRouter() (*gin.Engine, error) {
 	if crowdsecEnableLocalCache == "true" {
 		duration, err := time.ParseDuration(crowdsecDefaultCacheDuration)
 		if err != nil {
-			log.Warn().Msg("Duration provided is not valid, defaulting to 4h00m00s")
-			duration, _ = time.ParseDuration("4h")
+			log.Warn().Msg("Duration provided is not valid, defaulting to 15m00s")
+			duration, _ = time.ParseDuration("15m")
 		}
 		lc = cache.New(duration, 5*time.Minute)
 	} else {

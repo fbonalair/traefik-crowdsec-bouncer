@@ -62,7 +62,7 @@ The webservice configuration is made via environment variables:
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_CODE`  - HTTP code to respond in case of ban. Default to 403
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_MSG`   - HTTP body as message to respond in case of ban. Default to Forbidden
 * `CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE` - Configure the use of a local cache in memory. Default to false
-* `CROWDSEC_DEFAULT_CACHE_DURATION`     - Configure default duration of the cached data. Default to "4h00m00s"
+* `CROWDSEC_DEFAULT_CACHE_DURATION`     - Configure default duration of the cached data. Default to "15m00s"
 crowdsecDefaultCacheDuration
 * `PORT`                                - Change listening port of web server. Default listen on 8080
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
