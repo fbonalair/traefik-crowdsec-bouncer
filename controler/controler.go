@@ -132,9 +132,9 @@ func addToCache(lc *cache.Cache, clientIP string, authorized bool) {
 }
 
 /*
-   Get Local cache result for the IP
+   Get Local cache result for the IP, return if we found it and if it is authorized
 */
-func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcBan bool) {
+func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcAuthorized bool) {
 	log.Debug().
 		Msg("Check if IP is in the local cache")
 	if lc != nil {
@@ -143,8 +143,9 @@ func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcBan bool) 
 			log.Debug().
 				Str("ClientIP", value.Value).
 				Msg("IP was found in local cache")
-			// check if the result is positiv
-			return true, false
+
+			// check if the result is lcAuthorized
+			return true, value.Authorized
 		} else {
 			log.Debug().
 				Str("ClientIP", clientIP).
@@ -172,16 +173,17 @@ func ForwardAuth(c *gin.Context) {
 	// check local cache
 	lc := c.MustGet("lc").(*cache.Cache)
 
-	lcFound, lcBan := getLocalCache(lc, clientIP)
-	log.Debug().Bool("lcFound", lcFound).Bool("lcBan", lcBan).Msg("Works")
+	lcFound, lcAuthorized := getLocalCache(lc, clientIP)
+	log.Debug().Bool("lcFound", lcFound).Bool("lcAuthorized", lcAuthorized).Msg("Result of cache")
 	// the IP was banned and found in the cache
-	if lcBan {
+	if !lcAuthorized {
 		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
 		// The IP has been found in the cache but was not banned before
 	} else if lcFound {
 		c.Status(http.StatusOK)
 	} else {
 		// Getting and verifying ip using ClientIP function
+		// We should look at the cache in the isIPAuthorized
 		isAuthorized, err := isIpAuthorized(clientIP)
 		if err != nil {
 			log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIP))
