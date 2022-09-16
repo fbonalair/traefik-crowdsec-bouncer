@@ -150,10 +150,10 @@ func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcAuthorized
 			log.Debug().
 				Str("ClientIP", clientIP).
 				Msg("IP was not found in local cache")
-			return false, false
+			return false, true
 		}
 	}
-	return false, false
+	return false, true
 }
 
 /*
