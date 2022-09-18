@@ -56,25 +56,8 @@ func cronMiddleware(cr *cron.Cron) gin.HandlerFunc {
 	}
 }
 
-func setupRouter() (*gin.Engine, error) {
-	// logger framework
-	if gin.IsDebugging() {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-		log.Logger = log.Output(
-			zerolog.ConsoleWriter{
-				Out:        os.Stderr,
-				NoColor:    false,
-				TimeFormat: zerolog.TimeFieldFormat,
-			},
-		)
-	}
-	level, err := zerolog.ParseLevel(logLevel)
-	if err != nil {
-		return nil, err
-	}
-	zerolog.SetGlobalLevel(level)
-
-	// local go-cache
+func setupCacheStream() {
+	// local go-cache and streaming mode
 	if crowdsecEnableLocalCache == "true" || crowdsecEnableStreamMode == "true" {
 		duration, err := time.ParseDuration(crowdsecDefaultCacheDuration)
 		if err != nil {
@@ -113,6 +96,26 @@ func setupRouter() (*gin.Engine, error) {
 		lc = nil
 		cr = nil
 	}
+}
+func setupRouter() (*gin.Engine, error) {
+	// logger framework
+	if gin.IsDebugging() {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Logger = log.Output(
+			zerolog.ConsoleWriter{
+				Out:        os.Stderr,
+				NoColor:    false,
+				TimeFormat: zerolog.TimeFieldFormat,
+			},
+		)
+	}
+	level, err := zerolog.ParseLevel(logLevel)
+	if err != nil {
+		return nil, err
+	}
+	zerolog.SetGlobalLevel(level)
+
+	setupCacheStream()
 
 	// Web framework
 	router := gin.New()
