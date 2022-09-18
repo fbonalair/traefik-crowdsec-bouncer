@@ -23,3 +23,6 @@ tmp/
 
 !.idea/runConfigurations/
 !.idea/rest-api.http
+
+# Dev docker-compose
+docker-compose-dev.yaml

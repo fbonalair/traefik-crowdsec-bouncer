@@ -11,8 +11,16 @@ A http service to verify request and bounce them according to decisions made by 
 
 # Description
 This repository aim to implement a [CrowdSec](https://doc.crowdsec.net/) bouncer for the router [Traefik](https://doc.traefik.io/traefik/) to block malicious IP to access your services.
+
+It can operate with 2 modes:
+- Request
 For this it leverages [Traefik v2 ForwardAuth middleware](https://doc.traefik.io/traefik/middlewares/http/forwardauth/) and query CrowdSec with client IP.
 If the client IP is on ban list, it will get a http code 403 response. Otherwise, request will continue as usual.
+The bouncer can leverage use of a [local cache](https://github.com/patrickmn/go-cache) in order to reduce the number of requests made to the crowdsec local API. It will keep in cache the status for each IP that makes queries.
+
+- Stream
+Streaming mode allows you to keep in the local cache only the Banned IPs, every requests that does not hit the cache is authorized. Every minute, the cache is updated with news from the Local API using [go-cron](https://github.com/robfig/cron) library.  
+It is the recommanded and most perfomant mode, (enabled by default)
 
 # Demo
 ## Prerequisites 
@@ -60,6 +68,10 @@ The webservice configuration is made via environment variables:
 * `CROWDSEC_BOUNCER_LOG_LEVEL`          - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_CODE`  - HTTP code to respond in case of ban. Default to 403
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_MSG`   - HTTP body as message to respond in case of ban. Default to Forbidden
+* `CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE` - Configure the use of a local cache in memory. Default to false
+* `CROWDSEC_DEFAULT_CACHE_DURATION`     - Configure default duration of the cached data. Default to "15m00s"
+* `CROWDSEC_LAPI_ENABLE_STREAM_MODE`    - Enable streaming mode to pull decisions from the LAPI. Will override CROWDSEC_BOUNCER_ENABLE_LOCAL_CACHE and enable it. Default to "true"
+* `CROWDSEC_LAPI_STREAM_MODE_INTERVAL`  - Define the interval between two calls to LAPI. Default to "1m"
 * `PORT`                                - Change listening port of web server. Default listen on 8080
 * `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
 * `TRUSTED_PROXIES`                     - List of trusted proxies IP addresses in CIDR format, delimited by ','. Default of 0.0.0.0/0 should be fine for most use cases, but you HAVE to add them directly in traefik. 
@@ -82,3 +94,5 @@ Any constructive feedback is welcome, fill free to add an issue or a pull reques
 4. In `_test.env` replace `<your_generated_api_key>` with the previously generated key
 5. Adding a banned IP to your crodwsec instance with : `docker exec traefik-crowdsec-bouncer-crowdsec-1 cscli decisions add -i 1.2.3.4`
 6. Run test with `godotenv -f ./_test.env go test -cover`
+
+NB: Be aware that you cannot use network_mode: host with Docker Desktop on Windows. It is used in the docker-compose.yaml file for the traefik container to be able to contact a local instance of the bouncer through localhost

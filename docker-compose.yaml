@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   traefik:
-    image: "traefik:v2.5"
+    image: "traefik:v2.8.4"
     container_name: "traefik"
     command:
 #      - "--log.level=DEBUG"
@@ -29,14 +29,14 @@ services:
       - "traefik.http.routers.whoami.middlewares=crowdsec-bouncer@docker"
 
   crowdsec:
-    image: crowdsecurity/crowdsec:v1.2.0
+    image: crowdsecurity/crowdsec:v1.4.1
     environment:
       COLLECTIONS: "crowdsecurity/nginx"
       GID: "${GID-1000}"
     depends_on:
       - 'traefik'
     volumes:
-      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
+      # - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
       - logs:/var/log/nginx
       - crowdsec-db:/var/lib/crowdsec/data/
       - crowdsec-config:/etc/crowdsec/
