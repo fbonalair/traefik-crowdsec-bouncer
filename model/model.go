@@ -15,6 +15,6 @@ type Decision struct {
 }
 
 type Stream struct {
-	Deleted		[]Decision 	`json:"deleted"`
-	New				[]Decision 	`json:"new"`
+	Deleted []Decision 	`json:"deleted"`
+	New     []Decision 	`json:"new"`
 }

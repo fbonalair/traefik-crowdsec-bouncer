@@ -13,7 +13,7 @@ A http service to verify request and bounce them according to decisions made by 
 This repository aim to implement a [CrowdSec](https://doc.crowdsec.net/) bouncer for the router [Traefik](https://doc.traefik.io/traefik/) to block malicious IP to access your services.
 For this it leverages [Traefik v2 ForwardAuth middleware](https://doc.traefik.io/traefik/middlewares/http/forwardauth/) and query CrowdSec with client IP.
 
-It can operate with 2 modes:
+It can operate with 3 modes:
 - None
 If the client IP is on ban list, it will get a http code 403 response. Otherwise, request will continue as usual.
 All request
