@@ -14,3 +14,8 @@ type Decision struct {
 	Authorized bool   `json:"authorized"`
 	Simulated  bool   `json:"simulated"`
 }
+
+type StreamDecision struct {
+	Deleted []Decision `json:"deleted"`
+	New     []Decision `json:"new"`
+}

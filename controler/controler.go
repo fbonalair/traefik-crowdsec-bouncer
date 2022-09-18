@@ -23,11 +23,12 @@ import (
 )
 
 const (
-	realIpHeader         = "X-Real-Ip"
-	forwardHeader        = "X-Forwarded-For"
-	crowdsecAuthHeader   = "X-Api-Key"
-	crowdsecBouncerRoute = "v1/decisions"
-	healthCheckIp        = "127.0.0.1"
+	realIpHeader               = "X-Real-Ip"
+	forwardHeader              = "X-Forwarded-For"
+	crowdsecAuthHeader         = "X-Api-Key"
+	crowdsecBouncerRoute       = "v1/decisions"
+	crowdsecBouncerStreamRoute = "v1/decisions/stream"
+	healthCheckIp              = "127.0.0.1"
 )
 
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
@@ -36,13 +37,13 @@ var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
 var crowdsecBanResponseCode, _ = strconv.Atoi(OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_CODE", "403")) // Validated via ValidateEnv()
 var crowdsecBanResponseMsg = OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_MSG", "Forbidden")
 var crowdsecDefaultCacheDuration = OptionalEnv("CROWDSEC_BOUNCER_DEFAULT_CACHE_DURATION", "15m00s")
+var crowdsecEnableStreamMode = OptionalEnv("CROWDSEC_LAPI_ENABLE_STREAM_MODE", "true")
 var (
 	ipProcessed = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "crowdsec_traefik_bouncer_processed_ip_total",
 		Help: "The total number of processed IP",
 	})
 )
-
 var client = &http.Client{
 	Transport: &http.Transport{
 		MaxIdleConns:    10,
@@ -112,12 +113,66 @@ func isIpAuthorized(clientIP string) (authorized bool, decisions []model.Decisio
 }
 
 /*
+	Call to the LAPI stream and cache updates
+*/
+func CallLAPIStream(lc *cache.Cache, init bool) {
+	if lc != nil {
+		log.Debug().Bool("init", init).Msg("Start polling stream")
+		streamUrl := url.URL{
+			Scheme:   crowdsecBouncerScheme,
+			Host:     crowdsecBouncerHost,
+			Path:     crowdsecBouncerStreamRoute,
+			RawQuery: fmt.Sprintf("startup=%t", init),
+		}
+		req, err := http.NewRequest(http.MethodGet, streamUrl.String(), nil)
+		if err != nil {
+			// log smth
+			log.Warn().Msg("Could not create http request")
+		}
+		req.Header.Add(crowdsecAuthHeader, crowdsecBouncerApiKey)
+		log.Debug().
+			Str("method", http.MethodGet).
+			Str("url", streamUrl.String()).
+			Msg("Request Crowdsec's stream Local API")
+
+		// Calling crowdsec stream LAPI
+		resp, err := client.Do(req)
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				log.Err(err).Msg("An error occurred while closing body reader")
+			}
+		}(resp.Body)
+		reqBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Warn().Msg("Error reading resp.Body")
+			return
+		}
+		// if bytes.Equal(reqBody, []byte("null")) {
+		// 	log.Debug().Msgf("No decision for IP %q. Accepting", clientIP)
+		// 	return true, nil, nil
+		// }
+		var streamDecisions model.StreamDecision
+		// log.Debug().RawJSON("decisions", reqBody).Msg("Found Crowdsec's decision(s), evaluating ...")
+		err = json.Unmarshal(reqBody, &streamDecisions)
+		if err != nil {
+			log.Warn().Msg("Error unmarshall to streamDecision")
+			return
+		}
+		for _, d := range streamDecisions.New {
+			addToCache(lc, d)
+		}
+		for _, d := range streamDecisions.Deleted {
+			removeFromCache(lc, d)
+		}
+	}
+}
+
+/*
 	Add to the cache information about the IP
 */
 func addToCache(lc *cache.Cache, d model.Decision) {
 	if lc != nil {
-		// decisions returned is an array
-		// since IP are uniq in the store, we can have only one value stored
 		log.Debug().Interface("decision", d).Msg("Add IP to local cache")
 
 		duration, err := time.ParseDuration(d.Duration)
@@ -130,12 +185,23 @@ func addToCache(lc *cache.Cache, d model.Decision) {
 }
 
 /*
+	Remove from the cache information about the IP
+*/
+func removeFromCache(lc *cache.Cache, d model.Decision) {
+	if lc != nil {
+		log.Debug().Interface("decision", d).Msg("Remove IP from local cache")
+		lc.Delete(d.Value)
+	}
+}
+
+/*
    Get Local cache result for the IP, return if we found it and if it is authorized
 */
 func getLocalCache(lc *cache.Cache, clientIP string) (lcFound bool, lcAuthorized bool) {
-	log.Debug().
-		Msg("Check if IP is in the local cache")
+
 	if lc != nil {
+		log.Debug().
+			Msg("Check if IP is in the local cache")
 		if cachedIP, time, found := lc.GetWithExpiration(clientIP); found {
 			value := cachedIP.(model.Decision)
 			log.Debug().
@@ -178,7 +244,8 @@ func ForwardAuth(c *gin.Context) {
 	if !lcAuthorized {
 		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
 		// The IP has been found in the cache but was not banned before
-	} else if lcFound {
+	} else if lcFound || crowdsecEnableStreamMode == "true" {
+		// if we are in streaming mode, any IP not found in the cache will be cleared
 		c.Status(http.StatusOK)
 	} else {
 		// Getting and verifying ip using ClientIP function
