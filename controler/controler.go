@@ -55,7 +55,7 @@ var client = &http.Client{
 /**
 Call Crowdsec local IP and with realIP and return true if IP does NOT have a ban decisions.
 */
-func isIpAuthorized(clientIP string) (int, error) {
+func getBanDuration(clientIP string) (int, error) {
 	// Generating crowdsec API request
 	decisionUrl := url.URL{
 		Scheme:   crowdsecBouncerScheme,
@@ -204,7 +204,7 @@ func ForwardAuth(c *gin.Context) {
 	}
 
 	// Getting and verifying ip using ClientIP function
-	duration, err := isIpAuthorized(clientIP)
+	duration, err := getBanDuration(clientIP)
 	if err != nil {
 		log.Warn().Err(err).Msgf("An error occurred while checking IP %q", c.Request.Header.Get(clientIP))
 		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
@@ -227,7 +227,7 @@ func ForwardAuth(c *gin.Context) {
 Route to check bouncer connectivity with Crowdsec agent. Mainly use for Kubernetes readiness probe
 */
 func Healthz(c *gin.Context) {
-	duration, err := isIpAuthorized(healthCheckIp)
+	duration, err := getBanDuration(healthCheckIp)
 	if err != nil || duration >= 0 {
 		log.Warn().Err(err).Msgf("The health check did not pass. Check error if present and if the IP %q is authorized", healthCheckIp)
 		c.Status(http.StatusForbidden)
