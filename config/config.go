@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 /*
@@ -62,4 +63,19 @@ func ValidateEnv() {
 	if parsedCode < 100 || parsedCode > 599 {
 		log.Fatalf("The value for env var %s should be a valid http response code between 100 and 599 included.", "CROWDSEC_BOUNCER_BAN_RESPONSE_CODE")
 	}
+	cacheMode := OptionalEnv("CROWDSEC_BOUNCER_CACHE_MODE", "none")
+	if !contains([]string{"none", "live", "stream"}, cacheMode) {
+		log.Fatalf("Cache mode must be one of 'none', 'stream' or 'live'")
+	}
+  cacheStreamInterval := OptionalEnv("CROWDSEC_BOUNCER_CACHE_STREAM_INTERVAL", "1m")
+	duration, err := time.ParseDuration(cacheStreamInterval)
+	if err != nil && duration.Seconds() < 3600 {
+		log.Fatalf("Cache stream interval provided is not valid")
+	}
+	defaultCacheDuration := OptionalEnv("CROWDSEC_DEFAULT_CACHE_DURATION", "5m")
+	duration2, err := time.ParseDuration(defaultCacheDuration)
+	if err != nil && duration2.Seconds() < 3600{
+		log.Fatalf("Cache default duration provided is not valid")
+	}
+	
 }

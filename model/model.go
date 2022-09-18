@@ -13,3 +13,8 @@ type Decision struct {
 	Scenario  string `json:"scenario"`
 	Simulated bool   `json:"simulated"`
 }
+
+type Stream struct {
+	Deleted		[]Decision 	`json:"deleted"`
+	New				[]Decision 	`json:"new"`
+}
