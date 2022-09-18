@@ -32,9 +32,9 @@ const (
 
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
 var crowdsecBouncerHost = RequiredEnv("CROWDSEC_AGENT_HOST")
-var crowdsecBouncerCacheMode = OptionalEnv("CROWDSEC_BOUNCER_CACHE_MODE", "none")
-var crowdsecBouncerCacheStreamInterval, _ = time.ParseDuration(OptionalEnv("CROWDSEC_BOUNCER_CACHE_STREAM_INTERVAL", "1m"))
-var crowdsecBouncerDefaultCacheDuration, _ = time.ParseDuration(OptionalEnv("CROWDSEC_DEFAULT_CACHE_DURATION", "5m"))
+var crowdsecBouncerCacheMode = OptionalEnv("CROWDSEC_BOUNCER_CACHE_MODE", "none") // Validated via ValidateEnv()
+var crowdsecBouncerCacheStreamInterval, _ = time.ParseDuration(OptionalEnv("CROWDSEC_BOUNCER_CACHE_STREAM_INTERVAL", "1m")) // Validated via ValidateEnv()
+var crowdsecBouncerDefaultCacheDuration, _ = time.ParseDuration(OptionalEnv("CROWDSEC_DEFAULT_CACHE_DURATION", "5m")) // Validated via ValidateEnv()
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
 var crowdsecBanResponseCode, _ = strconv.Atoi(OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_CODE", "403")) // Validated via ValidateEnv()
 var crowdsecBanResponseMsg = OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_MSG", "Forbidden")
