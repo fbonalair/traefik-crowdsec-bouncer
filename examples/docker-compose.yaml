@@ -20,7 +20,7 @@ services:
     container_name: "simple-service-example"
     labels:
       # Create bouncer middleware
-      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://bouncer:8081/api/v1/forwardAuth"
+      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://bouncer:8080/api/v1/forwardAuth"
 
       # Traefik routing to this service
       - "traefik.enable=true"
@@ -44,9 +44,8 @@ services:
     image: fbonalair/traefik-crowdsec-bouncer:0.1.1
     container_name: "bouncer-example"
     environment:
-      CROWDSEC_BOUNCER_API_KEY: 32a44fde35544bc1d4968217877d8329
+      CROWDSEC_BOUNCER_API_KEY: MyApiKey
       CROWDSEC_AGENT_HOST: crowdsec:8080
-      PORT: "8081"
 
 volumes:
   logs-example:

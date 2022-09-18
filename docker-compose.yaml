@@ -2,79 +2,61 @@ version: "3.8"
 
 services:
   traefik:
-    image: "traefik:v2.8.3"
+    image: "traefik:v2.5"
     container_name: "traefik"
     command:
-      # - "--log.level=DEBUG"
-      - "--accesslog"
-      - "--accesslog.filepath=/var/log/traefik/traefik.log"
+#      - "--log.level=DEBUG"
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "logs:/var/log/traefik"
-    ports:
-      - 8000:80
-      - 8080:8080
+    network_mode: host
 
   whoami:
     image: traefik/whoami
     container_name: "simple-service"
     labels:
       # Create bouncer middleware
-      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://bouncer:8081/api/v1/forwardAuth"
+      - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://127.0.0.1:8081/api/v1/forwardAuth"
       - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.trustForwardHeader=true"
 
       # Traefik routing to this service
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`localhost`)"
+      - "traefik.http.routers.whoami.rule=Host(`localhost`, `192.168.1.80`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.routers.whoami.middlewares=crowdsec-bouncer@docker"
 
-  bouncer:
-    build:
-      context: .
-      dockerfile: Dockerfile.local
-    container_name: "bouncer"
-    environment:
-      CROWDSEC_BOUNCER_API_KEY: 40796d93c2958f9e58345514e67740e5
-      CROWDSEC_BOUNCER_CACHE_MODE: none
-      CROWDSEC_AGENT_HOST: crowdsec:8080
-      PORT: "8081"
-    ports:
-      - "8081:8081"
-    volumes:
-      - "./traefik-crowdsec-bouncer:/app"
-
   crowdsec:
-    image: crowdsecurity/crowdsec:v1.4.1
-    container_name: "crowdsec"
+    image: crowdsecurity/crowdsec:v1.2.0
     environment:
-      COLLECTIONS: crowdsecurity/traefik
-      CUSTOM_HOSTNAME: crowdsec
-      BOUNCER_KEY_TRAEFIK: 40796d93c2958f9e58345514e67740e5
+      COLLECTIONS: "crowdsecurity/nginx"
+      GID: "${GID-1000}"
     depends_on:
       - 'traefik'
     volumes:
       - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
-      - logs:/var/log/traefik
+      - logs:/var/log/nginx
       - crowdsec-db:/var/lib/crowdsec/data/
       - crowdsec-config:/etc/crowdsec/
     ports:
       - "8083:8080"
 
-  dashboard:
-    build: ./crowdsec/dashboard
-    ports:
-      - 3000:3000
-    environment:
-      MB_DB_FILE: /data/metabase.db
-    depends_on:
-      - crowdsec
-    volumes:
-      - crowdsec-db:/metabase-data/
+#  dashboard:
+#    build: ./crowdsec/dashboard
+#    ports:
+#      - 3000:3000
+#    environment:
+#      MB_DB_FILE: /data/metabase.db
+#      MGID: "${GID-1000}"
+#    depends_on:
+#      - 'crowdsec'
+#    volumes:
+#      - crowdsec-db:/metabase-data/
+##    networks:
+##      crowdsec_test:
+##        ipv4_address: 172.20.0.5
 #  # credentials: crowdsec@crowdsec.net and !!Cr0wdS3c_M3t4b4s3??
 
 volumes:
