@@ -166,7 +166,7 @@ func Healthz(c *gin.Context) {
 	duration, err := getBanDuration(HealthCheckIp)
 	if crowdsecBouncerCacheMode == "stream" && !caches.IsHealthy {
 		log.Warn().Err(err).Msgf("The health check did not pass. Check error if present and if the Crowdsec LAPI is available")
-		c.Status(http.StatusForbidden)
+		c.Status(http.StatusServiceUnavailable)
 	} else if err != nil || duration >= 0 {
 		log.Warn().Err(err).Msgf("The health check did not pass. Check error if present and if the IP %q is authorized", HealthCheckIp)
 		c.Status(http.StatusForbidden)
