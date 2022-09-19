@@ -38,7 +38,7 @@ var client = &http.Client{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 30 * time.Second,
 	},
-	Timeout: 5 * time.Second,
+	Timeout: 10 * time.Second,
 }
 
 /**
