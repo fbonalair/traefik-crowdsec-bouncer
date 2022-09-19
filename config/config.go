@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+const (
+	RealIpHeader                = "X-Real-Ip"
+	ForwardHeader               = "X-Forwarded-For"
+	CrowdsecAuthHeader          = "X-Api-Key"
+	CrowdsecBouncerRoute        = "v1/decisions"
+	CrowdsecBouncerStreamRoute  = "v1/decisions/stream"
+	HealthCheckIp               = "127.0.0.1"
+)
+
 /*
 	Check for an environment variable value, if absent use a default value
 */
@@ -74,7 +83,7 @@ func ValidateEnv() {
 	}
 	defaultCacheDuration := OptionalEnv("CROWDSEC_DEFAULT_CACHE_DURATION", "5m")
 	duration2, err := time.ParseDuration(defaultCacheDuration)
-	if err != nil && duration2.Seconds() < 3600{
+	if err != nil && duration2.Seconds() < 3600 {
 		log.Fatalf("Cache default duration provided is not valid")
 	}
 }

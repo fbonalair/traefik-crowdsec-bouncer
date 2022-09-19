@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
+	"github.com/fbonalair/traefik-crowdsec-bouncer/caches"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/controler"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
@@ -60,7 +61,7 @@ func setupRouter() (*gin.Engine, error) {
 		logger.WithSkipPath([]string{"/api/v1/ping", "/api/v1/healthz"}),
 	))
 	if crowdsecBouncerCacheMode == "stream" {
-		go controler.HandleStreamCache("true")
+		go caches.HandleStreamCache("true")
 	}
 	router.GET("/api/v1/ping", controler.Ping)
 	router.GET("/api/v1/healthz", controler.Healthz)
