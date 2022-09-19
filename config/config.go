@@ -77,5 +77,4 @@ func ValidateEnv() {
 	if err != nil && duration2.Seconds() < 3600{
 		log.Fatalf("Cache default duration provided is not valid")
 	}
-	
 }

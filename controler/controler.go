@@ -28,6 +28,8 @@ const (
 	crowdsecBouncerRoute        = "v1/decisions"
 	crowdsecBouncerStreamRoute  = "v1/decisions/stream"
 	healthCheckIp               = "127.0.0.1"
+	cacheBannedValue            = "t"
+	cacheNoBannedValue          = "f"
 )
 
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
@@ -49,11 +51,11 @@ var client = &http.Client{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 30 * time.Second,
 	},
-	Timeout: 10 * time.Second,
+	Timeout: 5 * time.Second,
 }
 
 /**
-Call Crowdsec local IP and with realIP and return true if IP does NOT have a ban decisions.
+Call Crowdsec local IP and with realIP and return the number of seconds the IP is banned, -1 means no ban, 0 means some problem during the function, more than 0 means ban.
 */
 func getBanDuration(clientIP string) (int, error) {
 	// Generating crowdsec API request
@@ -155,16 +157,16 @@ func HandleStreamCache(initialized string) {
 	if err != nil {
 		return
 	}
-	for i := 0; i < len(stream.New); i++ {
-		duration, err := time.ParseDuration(stream.New[i].Duration)
+	for _, decision := range stream.New {
+		duration, err := time.ParseDuration(decision.Duration)
 		if err == nil {
-			cache.Set([]byte(stream.New[i].Value), []byte("t"), int(duration.Seconds()))
-			log.Warn().Str("decision", stream.New[i].Value).Msg("Add")
+			cache.Set([]byte(decision.Value), []byte("t"), int(duration.Seconds()))
+			log.Debug().Str("decision", decision.Value).Msg("Add")
 		}
 	}
-	for i := 0; i < len(stream.Deleted); i++ {
-		cache.Del([]byte(stream.Deleted[i].Value))
-		log.Warn().Str("decision", stream.Deleted[i].Value).Msg("Delete")
+	for _, decision := range stream.Deleted {
+		cache.Del([]byte(decision.Value))
+		log.Debug().Str("decision", decision.Value).Msg("Delete")
 	}
 }
 
@@ -184,12 +186,10 @@ func ForwardAuth(c *gin.Context) {
 		Msg("Handling forwardAuth request")
 
 	if crowdsecBouncerCacheMode != "none" {
-		entry, err := cache.Get(key)
-		log.Warn().Str("entry", string(entry)).Str("key", string(key)).Msg("Entry")
-
-		if err == nil && len(entry) > 0 {
-			log.Info().Str("Banned", string(string(entry)[0])).Msg("Reading cache")
-			if string(entry)[0] == 'f' {
+		isBanned, err := cache.Get(key)
+		if err == nil && len(isBanned) > 0 {
+			log.Info().Str("isBanned", string(isBanned)).Msg("Reading cache")
+			if string(isBanned) == cacheNoBannedValue {
 				c.Status(http.StatusOK)
 			} else {
 				c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
@@ -212,12 +212,12 @@ func ForwardAuth(c *gin.Context) {
 	}
 	if duration >= 0 {
 		if crowdsecBouncerCacheMode == "live" && duration != 0 {
-			cache.Set(key, []byte("t"), duration)
+			cache.Set(key, []byte(cacheBannedValue), duration)
 		}
 		c.String(crowdsecBanResponseCode, crowdsecBanResponseMsg)
 	} else {
 		if crowdsecBouncerCacheMode == "live" {
-			cache.Set(key, []byte("f"), int(crowdsecBouncerDefaultCacheDuration.Seconds()))
+			cache.Set(key, []byte(cacheNoBannedValue), int(crowdsecBouncerDefaultCacheDuration.Seconds()))
 		}
 		c.Status(http.StatusOK)
 	}

@@ -16,14 +16,16 @@ For this it leverages [Traefik v2 ForwardAuth middleware](https://doc.traefik.io
 It can operate with 3 modes:
 - None
 If the client IP is on ban list, it will get a http code 403 response. Otherwise, request will continue as usual.
-All request
+All request call the Crowdsec LAPI
 
 - Live
 If the client IP is on ban list, it will get a http code 403 response. Otherwise, request will continue as usual.
-The bouncer can leverage use of a [local cache](https://github.com/patrickmn/go-cache) in order to reduce the number of requests made to the crowdsec local API. It will keep in cache the status for each IP that makes queries.
+The bouncer can leverage use of a [local cache](https://github.com/coocood/freecache) in order to reduce the number of requests made to the Crowdsec LAPI.
+It will keep in cache the status for each IP that makes queries.
 
 - Stream
-Streaming mode allows you to keep in the local cache only the Banned IPs, every requests that does not hit the cache is authorized. Every minute, the cache is updated with news from the Local API using [go-cron](https://github.com/robfig/cron) library.
+Streaming mode allows you to keep in the local cache only the Banned IPs, every requests that does not hit the cache is authorized.
+Every minute, the cache is updated with news from the Crowdsec LAPI.
 
 # Demo
 ## Prerequisites 
@@ -69,9 +71,9 @@ The webservice configuration is made via environment variables:
 * `CROWDSEC_AGENT_HOST`                 - Host and port of CrowdSec agent, i.e. crowdsec-agent:8080 (required)`
 * `CROWDSEC_BOUNCER_SCHEME`             - Scheme to query CrowdSec agent. Expected value: http, https. Default to http`
 * `CROWDSEC_BOUNCER_LOG_LEVEL`          - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
-* `CROWDSEC_BOUNCER_STREAM_INTERVAL`    - Configure delay between each call to pull decisions in stream cache mode. Default to "1m"
-* `CROWDSEC_BOUNCER_CACHE_MODE`         - (live, stream, none) Enable cache mode to pull decisions from the LAPI. Default to "none"
-* `CROWDSEC_DEFAULT_CACHE_DURATION` - Configure default duration of the cached data. Default to "5m"
+* `CROWDSEC_BOUNCER_STREAM_INTERVAL`    - Configure delay between each call to pull decisions in stream cache mode. Default to ["1m"](https://pkg.go.dev/time#ParseDuration)
+* `CROWDSEC_BOUNCER_CACHE_MODE`         - Enable cache mode to pull decisions from the LAPI.  Expected value: live, stream, none. Default to "none"
+* `CROWDSEC_DEFAULT_CACHE_DURATION`     - Configure default duration of the cached data. Default to ["5m"](https://pkg.go.dev/time#ParseDuration)
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_CODE`  - HTTP code to respond in case of ban. Default to 403
 * `CROWDSEC_BOUNCER_BAN_RESPONSE_MSG`   - HTTP body as message to respond in case of ban. Default to Forbidden
 * `PORT`                                - Change listening port of web server. Default listen on 8080
