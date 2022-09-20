@@ -28,7 +28,7 @@ func RequiredEnv(varName string) string {
 	} else if envVar == "" && envVarFileName != "" {
 		envVarFromFile, err := os.ReadFile(envVarFileName)
 		if err != nil {
-			log.Fatalf("Could not read env var from file %s. Exiting", envVarFileName)
+			log.Fatalf("Could not read env var from file %s (Error: %v). Exiting", envVarFileName, err)
 		}
 		return string(envVarFromFile)
 	}
