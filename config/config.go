@@ -18,7 +18,7 @@ func OptionalEnv(varName string, optional string) string {
 }
 
 /*
-	Check for an environment variable value or the equivalent docker secret, exit program if not found
+	Check for an environment variable value or the value of a file, exit program if not found
 */
 func RequiredEnv(varName string) string {
 	envVar := os.Getenv(varName)
