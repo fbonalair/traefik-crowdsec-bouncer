@@ -11,7 +11,8 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # - "/var/run/docker.sock:/var/run/docker.sock:ro"      # Docker standard mode
+      - "/run/user/1000/docker.sock:/var/run/docker.sock:ro"  # Docker in rootless mode
     network_mode: host
 
   whoami:
