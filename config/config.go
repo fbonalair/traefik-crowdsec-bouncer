@@ -18,12 +18,19 @@ func OptionalEnv(varName string, optional string) string {
 }
 
 /*
-	Check for an environment variable value, exit program if not found
+	Check for an environment variable value or the value of a file, exit program if not found
 */
 func RequiredEnv(varName string) string {
 	envVar := os.Getenv(varName)
-	if envVar == "" {
+	envVarFileName := os.Getenv(varName + "_FILE")
+	if envVar == "" && envVarFileName == "" {
 		log.Fatalf("The required env var %s is not provided. Exiting", varName)
+	} else if envVar == "" && envVarFileName != "" {
+		envVarFromFile, err := os.ReadFile(envVarFileName)
+		if err != nil {
+			log.Fatalf("Could not read env var from file %s (Error: %v). Exiting", envVarFileName, err)
+		}
+		return string(envVarFromFile)
 	}
 	return envVar
 }
