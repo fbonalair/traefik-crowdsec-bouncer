@@ -23,3 +23,5 @@ tmp/
 
 !.idea/runConfigurations/
 !.idea/rest-api.http
+
+traefik-crowdsec-bouncer

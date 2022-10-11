@@ -2,16 +2,18 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	. "github.com/fbonalair/traefik-crowdsec-bouncer/config"
+	"github.com/fbonalair/traefik-crowdsec-bouncer/caches"
 	"github.com/fbonalair/traefik-crowdsec-bouncer/controler"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"strings"
 )
 
+var crowdsecBouncerCacheMode = OptionalEnv("CROWDSEC_BOUNCER_CACHE_MODE", "none")
 var logLevel = OptionalEnv("CROWDSEC_BOUNCER_LOG_LEVEL", "1")
 var trustedProxiesList = strings.Split(OptionalEnv("TRUSTED_PROXIES", "0.0.0.0/0"), ",")
 
@@ -58,6 +60,9 @@ func setupRouter() (*gin.Engine, error) {
 	router.Use(logger.SetLogger(
 		logger.WithSkipPath([]string{"/api/v1/ping", "/api/v1/healthz"}),
 	))
+	if crowdsecBouncerCacheMode == "stream" {
+		go caches.HandleStreamCache("true")
+	}
 	router.GET("/api/v1/ping", controler.Ping)
 	router.GET("/api/v1/healthz", controler.Healthz)
 	router.GET("/api/v1/forwardAuth", controler.ForwardAuth)
