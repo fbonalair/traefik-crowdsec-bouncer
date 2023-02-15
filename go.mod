@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/gin-contrib/logger v0.2.0
 	github.com/gin-gonic/gin v1.7.7
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/rs/zerolog v1.25.0
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b
