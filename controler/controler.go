@@ -2,6 +2,7 @@ package controler
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,6 +32,7 @@ const (
 var crowdsecBouncerApiKey = RequiredEnv("CROWDSEC_BOUNCER_API_KEY")
 var crowdsecBouncerHost = RequiredEnv("CROWDSEC_AGENT_HOST")
 var crowdsecBouncerScheme = OptionalEnv("CROWDSEC_BOUNCER_SCHEME", "http")
+var crowdsecBouncerInsecureSkipVerify, err = strconv.ParseBool(OptionalEnv("CROWDSEC_BOUNCER_INSECURE_SKIP_VERIFY", "false"))
 var crowdsecBanResponseCode, _ = strconv.Atoi(OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_CODE", "403")) // Validated via ValidateEnv()
 var crowdsecBanResponseMsg = OptionalEnv("CROWDSEC_BOUNCER_BAN_RESPONSE_MSG", "Forbidden")
 var (
@@ -44,6 +46,7 @@ var client = &http.Client{
 	Transport: &http.Transport{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 30 * time.Second,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: crowdsecBouncerInsecureSkipVerify},
 	},
 	Timeout: 5 * time.Second,
 }
