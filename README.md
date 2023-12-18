@@ -54,16 +54,17 @@ Generate a bouncer API key following [CrowdSec documentation](https://doc.crowds
 ## Configuration
 The webservice configuration is made via environment variables:
 
-* `CROWDSEC_BOUNCER_API_KEY`            - CrowdSec bouncer API key required to be authorized to request local API (required)`
-* `CROWDSEC_AGENT_HOST`                 - Host and port of CrowdSec agent, i.e. crowdsec-agent:8080 (required)`
-* `CROWDSEC_BOUNCER_SCHEME`             - Scheme to query CrowdSec agent. Expected value: http, https. Default to http`
-* `CROWDSEC_BOUNCER_LOG_LEVEL`          - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
-* `CROWDSEC_BOUNCER_BAN_RESPONSE_CODE`  - HTTP code to respond in case of ban. Default to 403
-* `CROWDSEC_BOUNCER_BAN_RESPONSE_MSG`   - HTTP body as message to respond in case of ban. Default to Forbidden
-* `HEALTH_CHECKER_TIMEOUT_DURATION`     - [Golang string represation of a duration](https://pkg.go.dev/time#ParseDuration) to wait for bouncer's answer before failing health check. Default to 2s
-* `PORT`                                - Change listening port of web server. Default listen on 8080
-* `GIN_MODE`                            - By default, run app in "debug" mode. Set it to "release" in production
-* `TRUSTED_PROXIES`                     - List of trusted proxies IP addresses in CIDR format, delimited by ','. Default of 0.0.0.0/0 should be fine for most use cases, but you HAVE to add them directly in Traefik. 
+* `CROWDSEC_BOUNCER_API_KEY`              - CrowdSec bouncer API key required to be authorized to request local API (required)`
+* `CROWDSEC_AGENT_HOST`                   - Host and port of CrowdSec agent, i.e. crowdsec-agent:8080 (required)`
+* `CROWDSEC_BOUNCER_SCHEME`               - Scheme to query CrowdSec agent. Expected value: http, https. Default to http`
+* `CROWDSEC_BOUNCER_LOG_LEVEL`            - Minimum log level for bouncer. Expected value [zerolog levels](https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging). Default to 1
+* `CROWDSEC_BOUNCER_BAN_RESPONSE_CODE`    - HTTP code to respond in case of ban. Default to 403
+* `CROWDSEC_BOUNCER_BAN_RESPONSE_MSG`     - HTTP body as message to respond in case of ban. Default to Forbidden
+* `CROWDSEC_BOUNCER_INSECURE_SKIP_VERIFY` - Skip TLS certificate verification. Set to `true` to activate. Default: `false`
+* `HEALTH_CHECKER_TIMEOUT_DURATION`       - [Golang string represation of a duration](https://pkg.go.dev/time#ParseDuration) to wait for bouncer's answer before failing health check. Default to 2s
+* `PORT`                                  - Change listening port of web server. Default listen on 8080
+* `GIN_MODE`                              - By default, run app in "debug" mode. Set it to "release" in production
+* `TRUSTED_PROXIES`                       - List of trusted proxies IP addresses in CIDR format, delimited by ','. Default of 0.0.0.0/0 should be fine for most use cases, but you HAVE to add them directly in Traefik. 
 
 ## Exposed routes
 The webservice exposes some routes:
